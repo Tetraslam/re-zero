@@ -3,10 +3,58 @@
 ## What this is
 RL training pipeline for security-focused models using Prime Intellect's libraries (prime-rl, verifiers, environments hub), running on Modal GPUs ($5k credits, tetracorp workspace). Trained models also get served via vLLM on Modal.
 
-## Current status (2026-02-14)
+## Current status (2026-02-14, evening)
 
-### GLM-4.7-Flash training: ACTIVE
-GLM-4.7-Flash (`zai-org/GLM-4.7-Flash`) is a 30B MoE (3B active) text-only transformer with MLA (Multi-head Latent Attention). Architecture: `Glm4MoeLiteForCausalLM`. 64 routed experts + 1 shared expert, 4 experts per token, 47 layers, hidden_size=2048. Uses 4x H100: 1 for inference, 3 for training (FSDP + LoRA).
+### GLM-4.7-Flash training: WORKING (validation complete, 3 steps confirmed)
+GLM-4.7-Flash (`zai-org/GLM-4.7-Flash`) is a 30B MoE (3B active) text-only transformer with MLA (Multi-head Latent Attention). Architecture: `Glm4MoeLiteForCausalLM`. 64 routed experts + 1 shared expert, 4 experts per token, 47 layers, hidden_size=2048. No Mamba2 issues. Uses 4x H100: 1 for inference, 3 for training (FSDP + LoRA).
+
+**Validated results (redteam env, 3 steps completed):**
+| Step | Loss | Entropy | Mismatch KL | Grad Norm | Reward | Throughput | Time/step |
+|------|------|---------|-------------|-----------|--------|------------|-----------|
+| 0 | -0.0013 | 1.0298 | 0.0063 | 0.0109 | -0.7053 | 286 tok/s | 802s (~13 min) |
+| 1 | -0.0023 | 1.0407 | 0.0064 | 0.0082 | -0.7338 | 342 tok/s | 730s (~12 min) |
+| 2 | -0.0043 | 1.0154 | 0.0060 | 0.0119 | -0.6959 | 337 tok/s | 742s (~12 min) |
+
+Training produces real gradients. Loss is negative and growing in magnitude (good). A new run (`ap-XhoPfhddUmFMwaXRQQnBib`) is currently active and loading weights.
+
+**Required patches (in `deploy/train_glm4flash.py`):**
+1. `get_max_tokens()` API fix: prime-rl calls `get_max_tokens(request=..., prompt=...)` but vLLM v0.16.0 expects `get_max_tokens(max_tokens=int, input_length=int)`. Without this, `/v1/chat/completions/tokens` returns 500 and training gets zero logprobs.
+
+**Required config settings:**
+- `[trainer.tokenizer] name = "zai-org/GLM-4.7-Flash"` — prime-rl defaults to Qwen tokenizer otherwise
+- `max_model_len = 2048` in `[inference.model]` — reduces KV cache pressure (only 3.25 GiB available after model loading)
+
+**Speed:** ~12-13 min/step (with max_model_len=2048). 50 steps ≈ 10 hours. For production, increase max_steps to 200 and timeout beyond 2 hours.
+
+### GLM-4.6V: NOT YET SET UP (team requested)
+GLM-4.6V (`zai-org/GLM-4.6V`) is a **106B parameter vision-language MoE** model. Architecture: `Glm4vMoeForConditionalGeneration`. This is the model the team originally wanted (confusion with "GLM-4.7V" which doesn't exist yet — they meant 4.6V).
+
+**Why it's not running yet:**
+- 106B in BF16 = ~212 GB. Needs **at least 3 H100s just for inference** (tensor parallelism required).
+- Realistically needs **8x H100** total: 2-3 for inference (TP), 5-6 for training (FSDP + LoRA).
+- It's a **vision-language** model but all 5 CTF environments are **text-only** — the vision encoder would be dead weight.
+- prime-rl uses `ForCausalLM` models; GLM-4.6V is `ForConditionalGeneration` — may need additional patching.
+- vLLM supports it (>= v0.12.0), but inference TP config + prime-rl integration is untested.
+- Cost per step would be significantly higher than GLM-4.7-Flash (8x vs 4x H100).
+
+**To set up GLM-4.6V, you need to:**
+1. Create `deploy/train_glm46v.py` with 8x H100, tensor parallel inference (tp=2 or tp=3)
+2. Create `configs/glm46v-*.toml` configs with adjusted GPU splits (e.g., `inference_gpu_ids=[0,1,2]`, `trainer_gpu_ids=[3,4,5,6,7]`)
+3. Test whether prime-rl handles `ForConditionalGeneration` or if more patching is needed
+4. Determine LoRA target modules for the 4.6V architecture (may differ from Flash's MLA projections)
+
+### Nemotron training: BLOCKED (Loss=0.0, root cause identified, fix untested)
+Nemotron-3-Nano-30B (`nvidia/Nemotron-3-Nano-30B-v1`) produces Loss=0.0 due to Mamba2/Transformer hybrid architecture mismatch with prime-rl.
+
+**Root cause (identified but NOT tested):**
+- Nemotron has Mamba2 (SSM) layers that produce different logprobs in vLLM vs PyTorch
+- Mismatch KL is ~8 nats (vs 0.006 for pure transformers like GLM-4.7-Flash)
+- `seq_log_importance_ratio` sums token-level log ratios across ~3500 tokens → total ≈ -7000
+- `exp(-7000) = 0.0` exactly (float64 underflow) → loss coefficient = 0 → Loss = 0
+- **Proposed fix**: Add `min=-10.0` clamp to `seq_log_importance_ratio` in prime-rl's `loss.py` (giving `exp(-10) ≈ 4.5e-5`, small but non-zero)
+- All other debugging exhausted: FP32 precision, all masking disabled (inf thresholds), advantages verified non-zero, loss_mask active, torch.compile disabled — loss remains exactly 0.0
+- The clamp fix requires patching prime-rl source inside the Modal container (similar to get_max_tokens patch)
+- **Do not waste GPU credits on Nemotron until the clamp fix is tested and confirmed working.**
 
 ## Package management
 - **uv only**. Never use pip. Never manually edit pyproject.toml for package versions.
@@ -42,10 +90,12 @@ Library for RL environments and reward functions. Environments are Python packag
 - `uv add verifiers` (already installed)
 - Repo: github.com/PrimeIntellect-ai/verifiers
 
-## Model
+## Models
 | Model | HuggingFace ID | Params | Architecture | Training Status |
 |-------|---------------|--------|-------------|-----------------|
-| GLM-4.7-Flash | `zai-org/GLM-4.7-Flash` | 30B (3B active) | MoE transformer + MLA | Active (4x H100) |
+| GLM-4.7-Flash | `zai-org/GLM-4.7-Flash` | 30B (3B active) | MoE transformer + MLA (`Glm4MoeLiteForCausalLM`) | WORKING (4x H100) |
+| GLM-4.6V | `zai-org/GLM-4.6V` | 106B | Vision-language MoE (`Glm4vMoeForConditionalGeneration`) | NOT SET UP (needs 8x H100) |
+| Nemotron-3-Nano-30B | `nvidia/Nemotron-3-Nano-30B-v1` | 30B | Mamba2/Transformer hybrid | BLOCKED (Loss=0) |
 
 ## CTF environments (from intertwine on Prime Intellect Environments Hub)
 All 5 environments provide **continuous rewards** in [-1, +1] (NOT binary), enabling gradient signal for RL.
