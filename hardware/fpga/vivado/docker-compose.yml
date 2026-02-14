@@ -1,0 +1,20 @@
+services:
+  vivado:
+    # image: public.ecr.aws/ubuntu/ubuntu:22.04
+    build:
+      context: .
+      dockerfile: Dockerfile
+    platform: linux/amd64
+    container_name: vivado
+    mac_address: '76:04:0a:69:a4:38'
+    tty: true
+    stdin_open: true
+    working_dir: /root
+    command: ['bash']
+    volumes:
+      - ${HOME}/Downloads:/root/Downloads
+      - ${HOME}/downloads:/root/downloads
+      - vivado_opt:/tools/Xilinx
+
+volumes:
+  vivado_opt:
