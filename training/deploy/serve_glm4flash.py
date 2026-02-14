@@ -3,7 +3,8 @@
 Serves either the base HF model or an RL-trained checkpoint from the checkpoints volume.
 Set CHECKPOINT to a path like "glm4flash-redteam/step-50" to serve a trained model.
 
-30B MoE (3B active) — fits on 1 H100 but uses 2 for better KV cache / throughput.
+30B MoE (3B active) in FP8 ≈ 30GB — fits on 1x H100 with room for KV cache.
+Optimizations: FP8 quantization, CUDA graphs, prefix caching, chunked prefill.
 """
 
 import os
@@ -25,10 +26,13 @@ CHECKPOINT = None
 
 BASE_MODEL = "zai-org/GLM-4.7-Flash"
 SERVED_NAME = "glm-4.7-flash"
-N_GPU = 2
+N_GPU = 1
 VLLM_PORT = 8000
 
-vllm_image = create_vllm_image()
+# glm4_moe_lite requires latest transformers (>= 5.0.0rc0)
+vllm_image = create_vllm_image(
+    extra_packages=["git+https://github.com/huggingface/transformers.git"]
+)
 app = modal.App("re-zero-glm4flash")
 
 
@@ -59,12 +63,25 @@ def serve():
         "--tensor-parallel-size",
         str(N_GPU),
         "--trust-remote-code",
+        # -- quantization: FP8 on H100 (native tensor core support, ~2x throughput vs BF16)
+        "--quantization",
+        "fp8",
+        # -- CUDA graphs: pre-compiled execution paths, 10-20% throughput gain
+        # (no --enforce-eager)
+        # -- prefix caching: reuse KV states for shared system prompts across requests
+        "--enable-prefix-caching",
+        # -- chunked prefill: overlap prefill + decode for better throughput under load
+        "--enable-chunked-prefill",
+        # -- tool calling
         "--enable-auto-tool-choice",
         "--tool-call-parser",
         "hermes",
+        # -- concurrency: MoE only activates 3B of 30B params per token, can handle more seqs
+        "--max-num-seqs",
+        "512",
+        # -- memory
         "--max-model-len",
         "32768",
-        "--enforce-eager",
         "--gpu-memory-utilization",
         "0.95",
     ]
