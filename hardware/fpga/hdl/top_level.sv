@@ -11,6 +11,13 @@ module top_level (
     input wire esp_sig_p,
     input wire esp_sig_n
 );
+    logic sysclk_200mhz_passthrough;
+    clk_wiz clk_inst(
+        .sysclk_p(sysclk_p),
+        .sysclk_n(sysclk_n),
+        .sysclk_200mhz_passthrough(sysclk_200mhz_passthrough)
+    );
+
 
 endmodule
 `default_nettype wire

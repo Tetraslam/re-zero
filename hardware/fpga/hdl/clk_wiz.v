@@ -1,30 +1,26 @@
-`default_nettype none
-
 module clk_wiz (
-    input wire sysclk_p,
-    input wire sysclk_n,
-
-    output logic sysclk_200mhz
+    input    sysclk_p,                  
+    input    sysclk_n,                  
+    output   sysclk_200mhz_passthrough
 );
 
-// IN PROGRESS
-  logic ilk_200mhz;
+  wire sysclk_200mhz_inst;
+
+  // make clocks
   IBUFDS #(
-      .DIFF_TERM ("TRUE"),
-      .IOSTANDARD("LVDS")
-  ) u_ibufds (
-      .O (clk_200mhz),
-      .I (sysclk_p),
-      .IB(sysclk_n)
+      .DIFF_TERM   ("FALSE"), 
+      .IBUF_LOW_PWR("TRUE"),     
+      .IOSTANDARD  ("LVDS")
+  ) IBUFDS_inst (
+      .O           (sysclk_200mhz_inst),
+      .I           (sysclk_p),
+      .IB          (sysclk_n)
   );
 
-  BUFG u_bufg (
-      .I(clk_ibufg),
-      .O(sysclk_200mhz)
+  // add to global routing network
+  BUFG clkf_buf (
+      .O           (sysclk_200mhz_passthrough),
+      .I           (sysclk_200mhz_inst)
   );
-
-
 
 endmodule
-
-`default_nettype wire
