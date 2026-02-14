@@ -1,3 +1,5 @@
+// NOTE: ESP runs at 240 MHz
+
 // TODO: make clock to match ESP + multiple phased clocks
 // NOTE: Kintex-7 MMCM allows you to change the phase of a clock while the chip is running by increments of about 18 ps
 module clk_wiz (
@@ -8,7 +10,7 @@ module clk_wiz (
 
   wire sysclk_200mhz_inst;
 
-  // make clocks
+  // ** make clocks
   IBUFDS #(
       .DIFF_TERM   ("FALSE"), 
       .IBUF_LOW_PWR("TRUE"),     
@@ -19,7 +21,10 @@ module clk_wiz (
       .IB          (sysclk_n)
   );
 
-  // add to global routing network
+  // mccm 1 dynamically change phase between target and sensor (FPGA)
+  
+
+  // ** add to global routing network
   BUFG clkf_buf (
       .O           (sysclk_200mhz_passthrough),
       .I           (sysclk_200mhz_inst)
