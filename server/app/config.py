@@ -1,0 +1,13 @@
+from pydantic_settings import BaseSettings
+
+
+class Settings(BaseSettings):
+    convex_url: str = ""
+    convex_deploy_key: str = ""
+    modal_token_id: str = ""
+    modal_token_secret: str = ""
+
+    model_config = {"env_file": ".env"}
+
+
+settings = Settings()
