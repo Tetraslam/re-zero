@@ -1,4 +1,4 @@
-# GLM-4.7V x Code Vulnerability
+# GLM-4.7V x Red Team Attack
 # 2x H100: GPU 0 = inference (vLLM), GPU 1 = trainer (torchrun)
 
 inference_gpu_ids = [0]
@@ -7,14 +7,14 @@ trainer_gpu_ids = [1]
 max_steps = 200
 seq_len = 4096
 clean = false
-output_dir = "/root/checkpoints/glm47v-codevuln"
+output_dir = "/root/checkpoints/glm47v-redteam"
 
 [model]
 name = "THUDM/GLM-4.7V"
 
 [wandb]
 project = "re-zero"
-name = "glm47v-code-vulnerability"
+name = "glm47v-redteam-attack"
 offline = true
 
 [ckpt]
@@ -36,7 +36,7 @@ rollouts_per_example = 16
 max_tokens = 512
 
 [[orchestrator.env]]
-id = "intertwine/sv-env-code-vulnerability"
+id = "intertwine/sv-env-redteam-attack"
 
 [inference.model]
 trust_remote_code = true

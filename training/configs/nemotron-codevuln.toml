@@ -1,4 +1,4 @@
-# GLM-4.7V x Code Vulnerability
+# Nemotron 3 Nano x Code Vulnerability
 # 2x H100: GPU 0 = inference (vLLM), GPU 1 = trainer (torchrun)
 
 inference_gpu_ids = [0]
@@ -7,14 +7,14 @@ trainer_gpu_ids = [1]
 max_steps = 200
 seq_len = 4096
 clean = false
-output_dir = "/root/checkpoints/glm47v-codevuln"
+output_dir = "/root/checkpoints/nemotron-codevuln"
 
 [model]
-name = "THUDM/GLM-4.7V"
+name = "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16"
 
 [wandb]
 project = "re-zero"
-name = "glm47v-code-vulnerability"
+name = "nemotron-nano-code-vulnerability"
 offline = true
 
 [ckpt]
@@ -23,13 +23,14 @@ keep_last = 3
 
 [trainer.model]
 trust_remote_code = true
+attn = "sdpa"
 
 [trainer.optim]
-lr = 3e-6
+lr = 1e-5
 weight_decay = 0.0
 
 [orchestrator]
-batch_size = 256
+batch_size = 512
 rollouts_per_example = 16
 
 [orchestrator.sampling]

@@ -5,6 +5,7 @@ dist/
 build/
 .venv/
 .modal/
+.modal.toml
 *.safetensors
 *.bin
 *.gguf
@@ -13,3 +14,5 @@ checkpoints/
 *.key
 .DS_Store
 wandb/
+logs/
+mlflow/

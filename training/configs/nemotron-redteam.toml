@@ -1,19 +1,29 @@
 # Nemotron 3 Nano x Red Team Attack
+# 2x H100: GPU 0 = inference (vLLM), GPU 1 = trainer (torchrun)
 
 inference_gpu_ids = [0]
 trainer_gpu_ids = [1]
 
 max_steps = 200
 seq_len = 4096
+clean = false
+output_dir = "/root/checkpoints/nemotron-redteam"
 
 [model]
 name = "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16"
 
-[mlflow]
+[wandb]
 project = "re-zero"
 name = "nemotron-nano-redteam-attack"
+offline = true
 
 [ckpt]
+interval = 5
+keep_last = 3
+
+[trainer.model]
+trust_remote_code = true
+attn = "sdpa"
 
 [trainer.optim]
 lr = 1e-5
@@ -22,18 +32,15 @@ weight_decay = 0.0
 [orchestrator]
 batch_size = 512
 rollouts_per_example = 16
-oversampling_factor = 2.0
 
 [orchestrator.sampling]
 max_tokens = 512
-
-[orchestrator.buffer]
-online_difficulty_filtering = true
 
 [[orchestrator.env]]
 id = "intertwine/sv-env-redteam-attack"
 
 [inference.model]
+trust_remote_code = true
 enable_auto_tool_choice = true
 tool_call_parser = "hermes"
 
