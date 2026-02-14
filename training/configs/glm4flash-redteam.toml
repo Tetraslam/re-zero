@@ -58,7 +58,7 @@ trust_remote_code = true
 enable_auto_tool_choice = true
 tool_call_parser = "hermes"
 enforce_eager = true
-max_model_len = 4096
+max_model_len = 2048
 
 [inference.parallel]
 dp = 1

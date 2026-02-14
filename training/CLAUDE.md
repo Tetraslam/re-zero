@@ -105,7 +105,8 @@ Key log lines to watch:
 .venv/bin/modal serve deploy/serve_glm4flash.py
 ```
 - OpenAI-compatible API via vLLM (`/v1/chat/completions`, `/v1/completions`)
-- 2x H100 with tensor parallelism, 32K context, tool calling via `hermes` parser
+- 1x H100 with FP8 quantization (~30GB), CUDA graphs, prefix caching, chunked prefill
+- 32K context, tool calling via `hermes` parser
 - To serve a trained checkpoint, set `CHECKPOINT` in `serve_glm4flash.py` (e.g. `"glm4flash-redteam/step-50"`)
 - Four Modal Volumes: `re-zero-hf-cache` (HF downloads), `re-zero-vllm-cache` (vLLM cache), `re-zero-checkpoints` (trained weights), `re-zero-mlflow` (metrics)
 
@@ -126,7 +127,7 @@ training/
 │   ├── common.py                       # shared image, volumes
 │   ├── train.py                        # unified training entry point
 │   ├── train_glm4flash.py             # standalone GLM-4.7-Flash training (4x H100)
-│   └── serve_glm4flash.py             # vLLM serving for GLM-4.7-Flash (2x H100)
+│   └── serve_glm4flash.py             # vLLM serving for GLM-4.7-Flash (1x H100, FP8)
 ├── CLAUDE.md
 ├── README.md
 └── pyproject.toml
