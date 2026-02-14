@@ -1,3 +1,4 @@
 # hardware
 hardware/fpga/vivado/docker-compose.yml
 hardware/fpga/vivado/install.sh
+hardware/fpga/vivado/Dockerfile
