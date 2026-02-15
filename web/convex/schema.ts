@@ -7,6 +7,7 @@ export default defineSchema({
     email: v.string(),
     name: v.string(),
     imageUrl: v.optional(v.string()),
+    theme: v.optional(v.union(v.literal("light"), v.literal("dark"))),
   }).index("by_clerk_id", ["clerkId"]),
 
   projects: defineTable({
