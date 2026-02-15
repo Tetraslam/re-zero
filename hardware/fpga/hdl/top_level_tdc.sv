@@ -12,6 +12,8 @@ module top_level_tdc (
 );
     logic rst;
     assign rst = btn[0];
+    
+    // only for theta
     logic btn_down_raw;
     assign btn_down_raw = btn[1];
     logic btn_up_raw;
@@ -19,8 +21,9 @@ module top_level_tdc (
     logic debug_mode;
     assign debug_mode = sw[0];  // 1 = debug, 0 = normal
     logic [7:0] debug_counter;
-    
-    // only for theta
+    logic debug_expand;
+    assign debug_expand = sw[1];
+
     logic do_inc;
     button_trigger up(
         .clk(sysclk_200mhz_passthrough),
@@ -41,19 +44,34 @@ module top_level_tdc (
     logic theta_dir;
     assign theta_dir = do_inc; 
 
-    always_ff @(posedge sysclk_200mhz_passthrough) begin
-        if (rst) begin
-            debug_counter <= 0;
-        end
-        else if (theta_pulse) begin
-            debug_counter <= theta_dir ? debug_counter + 1 : debug_counter - 1;
-        end
-    end
+    // only for phi
+    logic btn_left_raw;
+    assign btn_left_raw = btn[2];
+    logic btn_right_raw;
+    assign btn_right_raw = btn[3];
 
+    logic do_inc_phi;
+    button_trigger left(
+        .clk(sysclk_200mhz_passthrough),
+        .sys_rst(rst),
+        .signal(btn_left_raw),
+        .clean_signal(do_inc_phi)
+    );
+    logic do_dec_phi;
+    button_trigger right(
+        .clk(sysclk_200mhz_passthrough),
+        .sys_rst(rst),
+        .signal(btn_right_raw),
+        .clean_signal(do_dec_phi)
+    );
+    logic locked_phi;
+    logic phi_pulse;
+    assign phi_pulse = (do_inc_phi || do_dec_phi) && locked_phi;
+    logic phi_dir;
+    assign phi_dir = do_inc_phi; 
 
     logic sysclk_200mhz_passthrough;
     logic clk_launch, clk_capture;
-    logic locked_phi;
     clk_wiz clk_inst (
         .sysclk_p(sysclk_p),
         .sysclk_n(sysclk_n),
@@ -103,7 +121,7 @@ module top_level_tdc (
         if (rst) begin
             led[7:0] = 8'b1111_1111;
         end
-        else if (!debug_mode) begin
+        else if (!debug_mode && !debug_expand) begin
             // LED 0: System Health (Must be ON = MMCM Locked)
             led[0] = locked_phi && locked_theta; 
             
@@ -119,8 +137,25 @@ module top_level_tdc (
             led[4] = tdc_data[35];  // Middle of delay line
             led[3] = tdc_data[47];
             led[2] = tdc_data[59];  // End of delay line (MSB)
-        end else begin
+        end else if (debug_mode) begin
             led[7:0] = debug_counter;
+        end else begin
+            // led[7] = tdc_data[48];
+            // led[6] = tdc_data[49];
+            // led[5] = tdc_data[50];
+            // led[4] = tdc_data[51];  // Middle of delay line
+            // led[3] = tdc_data[52];
+            // led[2] = tdc_data[53];  // End of delay line (MSB)
+            // led[1] = tdc_data[54];
+            // led[0] = tdc_data[55]; 
+            led[7] = tdc_data[56];
+            led[6] = tdc_data[57];
+            led[5] = tdc_data[58];
+            led[4] = tdc_data[59];  // Middle of delay line
+            led[3] = tdc_data[60];
+            led[2] = tdc_data[61];  // End of delay line (MSB)
+            led[1] = tdc_data[62];
+            led[0] = tdc_data[63]; 
         end
     end
 endmodule

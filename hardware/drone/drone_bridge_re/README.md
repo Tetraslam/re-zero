@@ -23,7 +23,37 @@
 - Ports: AP ESP32 is /dev/ttyUSB0, STA ESP32 is /dev/ttyUSB1.
 - After you implement, I want to be able to connect my phone to RADCLOFPV_676767 and open the RADCLOFPV app and fly the drone.
 
-## Build / Flash
+## Status (working)
+
+As of `logs/serial_07.txt`, phone control works end-to-end:
+
+`iPhone app -> ESP32 AP (RADCLOFPV_676767) -> USB serial -> host bridge -> USB serial -> ESP32 STA (joins RADCLOFPV_839819) -> drone`
+
+Key evidence in the logs:
+
+- Phone sends UDP control to `40000` (e.g. `udp: first_rx ... -> 40000 len=7`).
+- Drone responds on UDP `40000` (STA logs `udp: first_rx_from_drone(nonvideo) ... port=40000 len=106`).
+- AP forwards that response back to the phone (AP logs `udp: first_tx ... src=40000 len=106`).
+- Drone video (`UDP src port 7070`) is intentionally dropped at the STA (`udp: drop_video ...`), and the drop counter climbs (`udp_drop_video=...`) so UART bandwidth stays available for control-plane traffic.
+
+### Differences that made it work
+
+1. **Drop drone video on the STA (UDP src port `7070`).**
+   - Forwarding JPEG video over `921600` baud serial will saturate the link and introduce massive latency/jitter.
+   - We now drop `7070` at the STA and log `udp_drop_video` in the heartbeat.
+
+2. **Stable TCP connection IDs per listening port.**
+   - AP now uses `conn_id = listening_port` for TCP (`7060`, `8060`, `9060`) instead of the phone's ephemeral source port.
+   - This stops connection churn and keeps the STA side state stable across app reconnects.
+
+3. **Stop upstream thrash on phone reconnect.**
+   - When the app reconnects to the AP TCP server, the AP replaces the phone-side socket without forcing an upstream close.
+
+4. **STA retries TCP connects without tearing down state.**
+   - The STA no longer causes the AP to close phone TCP just because the drone-side TCP open failed.
+   - TCP connect attempts log timing/bind details (e.g. `dt=... bind_ok=... local=...`) to diagnose drone behavior.
+
+## Build / flash
 
 Arduino CLI is assumed (`arduino-cli`) with an ESP32 core installed.
 
@@ -39,13 +69,13 @@ make ap_flash
 make sta_flash
 ```
 
-## Run Bridge
+## Run bridge
 
 This repo is `uv`-friendly.
 
 ```bash
 uv sync
-uv run drone-bridge --ap /dev/ttyUSB0 --sta /dev/ttyUSB1 --baud 921600 --logdir logs
+uv run drone-bridge
 ```
 
-If you omit `--ap/--sta`, the bridge will try to  auto-detect the ports by waiting for periodic `HELLO` frames from each ESP32.
+Defaults assume `/dev/ttyUSB0` is AP and `/dev/ttyUSB1` is STA at `921600` baud, and write logs under `logs/`.
