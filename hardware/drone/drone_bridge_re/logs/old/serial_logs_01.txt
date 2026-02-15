@@ -1,0 +1,53 @@
+willi@bill-fmwk-arch drone_bridge_re $ uv run drone-bridge
+bridge: ap=/dev/ttyUSB0 sta=/dev/ttyUSB1 baud=921600 logdir=logs capture=logs/capture_1771130439.sf.bin
+bridge: roles ap_role=AP sta_role=STA
+[AP->STA] /dev/ttyUSB0 LOG: wifi: STA_CONNECTED mac=5a:9f:06:94:44:e9 aid=1 stations=1
+[STA->AP] /dev/ttyUSB1 LOG: wifi: hb ssid=RADCLOFPV_839819 status=3 rssi=-22 ip=192.168.0.2 gw=192.168.0.1 drone_ip=192.168.0.1 udp_tx=0 udp_rx=0
+[STA->AP] /dev/ttyUSB1 LOG: wifi: hb ssid=RADCLOFPV_839819 status=3 rssi=-22 ip=192.168.0.2 gw=192.168.0.1 drone_ip=192.168.0.1 udp_tx=0 udp_rx=0
+[AP->STA] /dev/ttyUSB0 LOG: tcp: accept port=7060 from=192.168.0.2:58307 conn=1
+[AP->STA] /dev/ttyUSB0 TCP_DATA conn=1 port=7060 len=46 head=6c657765695f636d6400020000000100000000000000000000000000000000000000000000000000000000000000
+[STA->AP] /dev/ttyUSB1 LOG: tcp: open_req conn=1 port=7060 wifi_status=3 rssi=-22 ip=192.168.0.2 gw=192.168.0.1 drone_ip=192.168.0.1
+[STA->AP] /dev/ttyUSB1 LOG: tcp: connect_spawn conn=1 port=7060 rc=1
+[AP->STA] /dev/ttyUSB0 LOG: tcp: accept port=8060 from=192.168.0.2:58308 conn=2
+[AP->STA] /dev/ttyUSB0 TCP_DATA conn=2 port=8060 len=54 head=6c657765695f636d6400040000000000000000000000080000000000000000000000000000000000000000000000536d906900000000
+[STA->AP] /dev/ttyUSB1 LOG: tcp: open_req conn=2 port=8060 wifi_status=3 rssi=-22 ip=192.168.0.2 gw=192.168.0.1 drone_ip=192.168.0.1
+[STA->AP] /dev/ttyUSB1 LOG: tcp: connect_spawn conn=2 port=8060 rc=1
+[AP->STA] /dev/ttyUSB0 LOG: udp: first_rx from=192.168.0.2:6000 -> 40000 len=7
+[AP->STA] /dev/ttyUSB0 UDP conn=6000 port=40000 len=7 head=63630100000000
+[AP->STA] /dev/ttyUSB0 TCP_DATA conn=1 port=7060 len=46 head=6c657765695f636d6400010000000000000000000000000000000000000000000000000000000000000000000000
+[AP->STA] /dev/ttyUSB0 TCP_DATA conn=1 port=7060 len=46 head=6c657765695f636d6400010000000000000000000000000000000000000000000000000000000000000000000000
+[AP->STA] /dev/ttyUSB0 UDP conn=6000 port=40000 len=7 head=63630100000000
+[AP->STA] /dev/ttyUSB0 UDP conn=6000 port=40000 len=7 head=63630100000000
+[AP->STA] /dev/ttyUSB0 TCP_DATA conn=1 port=7060 len=46 head=6c657765695f636d6400010000000000000000000000000000000000000000000000000000000000000000000000
+[STA->AP] /dev/ttyUSB1 LOG: wifi: hb ssid=RADCLOFPV_839819 status=3 rssi=-22 ip=192.168.0.2 gw=192.168.0.1 drone_ip=192.168.0.1 udp_tx=3 udp_rx=0
+[AP->STA] /dev/ttyUSB0 UDP conn=6000 port=40000 len=7 head=63630100000000
+[AP->STA] /dev/ttyUSB0 TCP_DATA conn=1 port=7060 len=46 head=6c657765695f636d6400010000000000000000000000000000000000000000000000000000000000000000000000
+[AP->STA] /dev/ttyUSB0 LOG: tcp: accept port=8060 from=192.168.0.2:58309 conn=3
+[AP->STA] /dev/ttyUSB0 TCP_DATA conn=3 port=8060 len=54 head=6c657765695f636d6400040000000000000000000000080000000000000000000000000000000000000000000000576d906900000000
+[STA->AP] /dev/ttyUSB1 LOG: tcp: open_req conn=3 port=8060 wifi_status=3 rssi=-22 ip=192.168.0.2 gw=192.168.0.1 drone_ip=192.168.0.1
+[STA->AP] /dev/ttyUSB1 LOG: tcp: connect_spawn conn=3 port=8060 rc=1
+[STA->AP] /dev/ttyUSB1 LOG: tcp: open_fail conn=3 port=8060 errno=112 err=Address already in use
+[AP->STA] /dev/ttyUSB0 LOG: tcp: open_fail conn=3 port=8060
+[AP->STA] /dev/ttyUSB0 UDP conn=6000 port=40000 len=7 head=63630100000000
+[AP->STA] /dev/ttyUSB0 TCP_DATA conn=1 port=7060 len=46 head=6c657765695f636d6400010000000000000000000000000000000000000000000000000000000000000000000000
+[AP->STA] /dev/ttyUSB0 UDP conn=6000 port=40000 len=7 head=63630100000000
+[AP->STA] /dev/ttyUSB0 TCP_DATA conn=1 port=7060 len=46 head=6c657765695f636d6400010000000000000000000000000000000000000000000000000000000000000000000000
+[AP->STA] /dev/ttyUSB0 UDP conn=6000 port=40000 len=7 head=63630100000000
+[AP->STA] /dev/ttyUSB0 TCP_DATA conn=1 port=7060 len=46 head=6c657765695f636d6400010000000000000000000000000000000000000000000000000000000000000000000000
+[STA->AP] /dev/ttyUSB1 LOG: tcp: open_fail conn=1 port=7060 errno=116 err=Connection timed out
+[AP->STA] /dev/ttyUSB0 LOG: tcp: open_fail conn=1 port=7060
+[AP->STA] /dev/ttyUSB0 UDP conn=6000 port=40000 len=7 head=63630100000000
+[AP->STA] /dev/ttyUSB0 LOG: tcp: accept port=7060 from=192.168.0.2:58310 conn=4
+[AP->STA] /dev/ttyUSB0 TCP_DATA conn=4 port=7060 len=46 head=6c657765695f636d6400020000000100000000000000000000000000000000000000000000000000000000000000
+[STA->AP] /dev/ttyUSB1 LOG: tcp: open_req conn=4 port=7060 wifi_status=3 rssi=-23 ip=192.168.0.2 gw=192.168.0.1 drone_ip=192.168.0.1
+[STA->AP] /dev/ttyUSB1 LOG: tcp: connect_spawn conn=4 port=7060 rc=1
+[AP->STA] /dev/ttyUSB0 LOG: tcp: accept port=8060 from=192.168.0.2:58311 conn=5
+[AP->STA] /dev/ttyUSB0 TCP_DATA conn=5 port=8060 len=54 head=6c657765695f636d64000400000000000000000000000800000000000000000000000000000000000000000000005b6d906900000000
+[STA->AP] /dev/ttyUSB1 LOG: tcp: open_req conn=5 port=8060 wifi_status=3 rssi=-23 ip=192.168.0.2 gw=192.168.0.1 drone_ip=192.168.0.1
+[STA->AP] /dev/ttyUSB1 LOG: tcp: connect_spawn conn=5 port=8060 rc=1
+[STA->AP] /dev/ttyUSB1 LOG: wifi: hb ssid=RADCLOFPV_839819 status=3 rssi=-22 ip=192.168.0.2 gw=192.168.0.1 drone_ip=192.168.0.1 udp_tx=8 udp_rx=0
+[AP->STA] /dev/ttyUSB0 UDP conn=6000 port=40000 len=7 head=63630100000000
+[AP->STA] /dev/ttyUSB0 TCP_DATA conn=4 port=7060 len=46 head=6c657765695f636d6400010000000000000000000000000000000000000000000000000000000000000000000000
+[AP->STA] /dev/ttyUSB0 UDP conn=6000 port=40000 len=7 head=63630100000000
+[AP->STA] /dev/ttyUSB0 TCP_DATA conn=4 port=7060 len=46 head=6c657765695f636d6400010000000000000000000000000000000000000000000000000000000000000000000000
+^Cwilli@bill-fmwk-arch drone_bridge_re $

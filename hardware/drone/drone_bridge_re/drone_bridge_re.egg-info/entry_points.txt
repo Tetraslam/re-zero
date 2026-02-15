@@ -1,0 +1,2 @@
+[console_scripts]
+drone-bridge = bridge.bridge:main

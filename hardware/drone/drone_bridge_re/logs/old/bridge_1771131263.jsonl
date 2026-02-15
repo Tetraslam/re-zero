@@ -1,0 +1,15 @@
+{"ts": 1771131269.7999487, "dir": "AP->STA", "dev": "/dev/ttyUSB0", "type": "LOG", "conn": 0, "port": 0, "len": 14, "payload_hex": "776966693a2041505f5354415254"}
+{"ts": 1771131269.800025, "dir": "AP->STA", "dev": "/dev/ttyUSB0", "type": "LOG", "conn": 0, "port": 0, "len": 43, "payload_hex": "41502075703a20737369643d524144434c4f4650565f3637363736372069703d3139322e3136382e302e31"}
+{"ts": 1771131269.800045, "dir": "AP->STA", "dev": "/dev/ttyUSB0", "type": "HELLO", "conn": 0, "port": 0, "len": 2, "payload_hex": "4150"}
+{"ts": 1771131269.8000576, "dir": "AP->STA", "dev": "/dev/ttyUSB0", "type": "HELLO", "conn": 0, "port": 0, "len": 2, "payload_hex": "4150"}
+{"ts": 1771131269.8000686, "dir": "AP->STA", "dev": "/dev/ttyUSB0", "type": "HELLO", "conn": 0, "port": 0, "len": 2, "payload_hex": "4150"}
+{"ts": 1771131270.0908973, "dir": "AP->STA", "dev": "/dev/ttyUSB0", "type": "HELLO", "conn": 0, "port": 0, "len": 2, "payload_hex": "4150"}
+{"ts": 1771131272.0921237, "dir": "AP->STA", "dev": "/dev/ttyUSB0", "type": "HELLO", "conn": 0, "port": 0, "len": 2, "payload_hex": "4150"}
+{"ts": 1771131274.093347, "dir": "AP->STA", "dev": "/dev/ttyUSB0", "type": "HELLO", "conn": 0, "port": 0, "len": 2, "payload_hex": "4150"}
+{"ts": 1771131276.0945761, "dir": "AP->STA", "dev": "/dev/ttyUSB0", "type": "HELLO", "conn": 0, "port": 0, "len": 2, "payload_hex": "4150"}
+{"ts": 1771131278.0962384, "dir": "AP->STA", "dev": "/dev/ttyUSB0", "type": "HELLO", "conn": 0, "port": 0, "len": 2, "payload_hex": "4150"}
+{"ts": 1771131280.0975487, "dir": "AP->STA", "dev": "/dev/ttyUSB0", "type": "HELLO", "conn": 0, "port": 0, "len": 2, "payload_hex": "4150"}
+{"ts": 1771131282.0987904, "dir": "AP->STA", "dev": "/dev/ttyUSB0", "type": "HELLO", "conn": 0, "port": 0, "len": 2, "payload_hex": "4150"}
+{"ts": 1771131284.099902, "dir": "AP->STA", "dev": "/dev/ttyUSB0", "type": "HELLO", "conn": 0, "port": 0, "len": 2, "payload_hex": "4150"}
+{"ts": 1771131286.100796, "dir": "AP->STA", "dev": "/dev/ttyUSB0", "type": "HELLO", "conn": 0, "port": 0, "len": 2, "payload_hex": "4150"}
+{"ts": 1771131288.102353, "dir": "AP->STA", "dev": "/dev/ttyUSB0", "type": "HELLO", "conn": 0, "port": 0, "len": 2, "payload_hex": "4150"}
