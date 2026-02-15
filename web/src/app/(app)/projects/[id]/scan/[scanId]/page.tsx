@@ -737,7 +737,7 @@ function TracePanel({
 // --- Agent label map ---
 const AGENT_LABELS: Record<string, string> = {
   opus: "Opus 4.6",
-  glm47v: "GLM-4.7V",
+  glm: "GLM-4.6V",
   nemotron: "Nemotron",
 };
 

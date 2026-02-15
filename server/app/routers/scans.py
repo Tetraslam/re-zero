@@ -49,9 +49,13 @@ async def _launch_scan(req: StartScanRequest):
             if not repo_url:
                 raise ValueError("Missing repoUrl in target config")
 
-            # Look up the deployed Modal function and spawn it
-            run_oss_scan = modal.Function.from_name("re-zero-sandbox", "run_oss_scan")
-            await run_oss_scan.remote.aio(
+            # Route to correct Modal function based on agent
+            if req.agent == "opus":
+                fn = modal.Function.from_name("re-zero-sandbox", "run_oss_scan")
+            else:
+                fn = modal.Function.from_name("re-zero-sandbox", "run_oss_scan_opencode")
+
+            await fn.remote.aio(
                 scan_id=req.scan_id,
                 project_id=req.project_id,
                 repo_url=repo_url,
@@ -68,8 +72,13 @@ async def _launch_scan(req: StartScanRequest):
             test_account = req.target_config.get("testAccount")
             user_context = req.target_config.get("context")
 
-            run_web_scan = modal.Function.from_name("re-zero-sandbox", "run_web_scan")
-            await run_web_scan.remote.aio(
+            # Route to correct Modal function based on agent
+            if req.agent == "opus":
+                fn = modal.Function.from_name("re-zero-sandbox", "run_web_scan")
+            else:
+                fn = modal.Function.from_name("re-zero-sandbox", "run_web_scan_opencode")
+
+            await fn.remote.aio(
                 scan_id=req.scan_id,
                 project_id=req.project_id,
                 target_url=target_url,

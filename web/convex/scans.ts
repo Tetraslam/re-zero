@@ -24,7 +24,7 @@ export const create = mutation({
     projectId: v.id("projects"),
     agent: v.union(
       v.literal("opus"),
-      v.literal("glm47v"),
+      v.literal("glm"),
       v.literal("nemotron")
     ),
   },

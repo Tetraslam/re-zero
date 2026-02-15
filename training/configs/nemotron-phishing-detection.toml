@@ -1,15 +1,16 @@
-# Nemotron 3 Nano — Phishing Detection
-# 4x H100: 2 inference (TP=2) + 2 training (FSDP2 + LoRA)
+# OpenReasoning-Nemotron-14B — Phishing Detection
+# Qwen2ForCausalLM (standard transformer, 14.7B dense)
+# 4x H100: 1 inference + 3 training (FSDP2 + LoRA)
 
-inference_gpu_ids = [0, 1]
-trainer_gpu_ids = [2, 3]
+inference_gpu_ids = [0]
+trainer_gpu_ids = [1, 2, 3]
 
 max_steps = 200
 seq_len = 4096
 output_dir = "/root/checkpoints/nemotron-phishing-detection"
 
 [model]
-name = "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16"
+name = "nvidia/OpenReasoning-Nemotron-14B"
 
 [wandb]
 project = "re-zero"
@@ -17,26 +18,25 @@ name = "nemotron-phishing-detection"
 offline = true
 
 [ckpt]
+interval = 5
 
 [trainer.model]
 impl = "auto"
-attn = "eager"
-trust_remote_code = true
-
-[trainer.model.ac]
-freq = 1
 
 [trainer.model.lora]
 rank = 32
 alpha = 64
 target_modules = ["q_proj", "k_proj", "v_proj", "o_proj"]
 
+[trainer.tokenizer]
+name = "nvidia/OpenReasoning-Nemotron-14B"
+
 [trainer.optim]
 lr = 1e-5
 
 [orchestrator]
 batch_size = 128
-rollouts_per_example = 8
+rollouts_per_example = 4
 
 [orchestrator.sampling]
 max_tokens = 1024
@@ -48,7 +48,7 @@ name = "phishing-detection"
 [inference]
 
 [inference.model]
-trust_remote_code = true
+max_model_len = 65536
 
 [inference.parallel]
 dp = 1

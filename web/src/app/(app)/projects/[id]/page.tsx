@@ -8,15 +8,15 @@ import Link from "next/link";
 import { useMemo, useState, useEffect } from "react";
 import { useMinLoading } from "@/hooks/use-min-loading";
 
-const AGENTS = ["opus", "glm47v", "nemotron"] as const;
+const AGENTS = ["opus", "glm", "nemotron"] as const;
 const AGENT_LABELS: Record<string, string> = {
   opus: "Rem (Opus 4.6)",
-  glm47v: "Rem (GLM-4.7V)",
+  glm: "Rem (GLM-4.6V)",
   nemotron: "Rem (Nemotron)",
 };
 const AGENT_SHORT: Record<string, string> = {
   opus: "Opus 4.6",
-  glm47v: "GLM-4.7V",
+  glm: "GLM-4.6V",
   nemotron: "Nemotron",
 };
 
@@ -129,7 +129,7 @@ export default function ProjectPage() {
     return null;
   }, [selectedScanId, scans, reportByScan]);
 
-  const handleStartScan = async (agent: "opus" | "glm47v" | "nemotron") => {
+  const handleStartScan = async (agent: "opus" | "glm" | "nemotron") => {
     if (!project) return;
     setStarting(true);
     const scanId = await createScan({ projectId, agent });
@@ -211,16 +211,20 @@ export default function ProjectPage() {
           )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          {AGENTS.map((agent) => (
-            <button
-              key={agent}
-              onClick={() => handleStartScan(agent)}
-              disabled={starting}
-              className="text-xs border border-rem/30 text-rem/70 px-2.5 py-1.5 hover:bg-rem/10 hover:border-rem hover:text-rem transition-all duration-100 disabled:opacity-30 active:translate-y-px"
-            >
-              + {AGENT_SHORT[agent]}
-            </button>
-          ))}
+          {AGENTS.map((agent) => {
+            const isDisabled = starting || (agent === "nemotron" && project.targetType === "web");
+            return (
+              <button
+                key={agent}
+                onClick={() => handleStartScan(agent)}
+                disabled={isDisabled}
+                title={agent === "nemotron" && project.targetType === "web" ? "Nemotron is available for OSS scanning only" : undefined}
+                className="text-xs border border-rem/30 text-rem/70 px-2.5 py-1.5 hover:bg-rem/10 hover:border-rem hover:text-rem transition-all duration-100 disabled:opacity-30 active:translate-y-px"
+              >
+                + {AGENT_SHORT[agent]}
+              </button>
+            );
+          })}
         </div>
       </div>
 

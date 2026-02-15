@@ -10,7 +10,7 @@ Browser → Next.js (Clerk auth, Convex client) → Convex (all state, real-time
                                               Modal Sandboxes
                                           ┌──────────┴──────────┐
                                     Claude Agent SDK      OpenCode SDK
-                                      (Opus 4.6)       (GLM-4.7V / Nemotron)
+                                      (Opus 4.6)       (GLM-4.6V / Nemotron)
 ```
 
 - **Frontend:** Next.js, pnpm, Clerk auth, Convex client, shadcn (all components, fully custom theme)
@@ -25,7 +25,7 @@ Browser → Next.js (Clerk auth, Convex client) → Convex (all state, real-time
 - Server spins up a Modal sandbox, clones the repo, deploys an agent
 - Two agent harness options:
   - **Claude Agent SDK** — for Opus 4.6
-  - **OpenCode SDK** — for RL-trained GLM-4.7V and Nemotron 3 Nano (served via vLLM on Modal, built by Mouad)
+  - **OpenCode SDK** — for GLM-4.6V (via OpenRouter) and Nemotron (via custom Modal endpoint)
 - Sandbox has tools: Ghidra MCP, scratchpad, whatever else we add
 - Agent explores codebase, finds vulnerabilities, writes structured JSON report
 - Agent reports actions back to server via HTTP callback → server writes to Convex → frontend gets live updates
@@ -58,7 +58,7 @@ Browser → Next.js (Clerk auth, Convex client) → Convex (all state, real-time
 ```
 users          — synced from Clerk (clerk_id, email, name)
 projects       — name, target_type (oss|web|hardware|fpga), target_config, status, user_id
-scans          — project_id, agent (opus|glm47v|nemotron), sandbox_id, status, started_at, finished_at
+scans          — project_id, agent (opus|glm|nemotron), sandbox_id, status, started_at, finished_at
 actions        — scan_id, type (tool_call|observation|reasoning|report), payload, timestamp
 reports        — scan_id, findings[], severity_counts, raw JSON
 gateways       — project_id, type (serial|fpga), endpoint, status, last_seen
