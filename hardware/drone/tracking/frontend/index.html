@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drone Coordinate Tracker</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+        .header {
+            padding: 16px 24px;
+            border-bottom: 1px solid #222;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .header h1 { font-size: 16px; font-weight: 600; color: #fff; }
+        .header .status {
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+        }
+        .header .status.connected { border-color: #22c55e; color: #22c55e; }
+        .header .status.streaming { border-color: #3b82f6; color: #3b82f6; }
+        .main {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            height: calc(100vh - 57px);
+        }
+        .video-panel {
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .video-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            flex: 1;
+        }
+        .video-box {
+            position: relative;
+            background: #111;
+            border: 1px solid #222;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .video-box video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        .video-box .label {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            font-size: 11px;
+            padding: 2px 8px;
+            background: rgba(0,0,0,0.7);
+            border-radius: 4px;
+            color: #888;
+        }
+        .controls {
+            display: flex;
+            gap: 8px;
+        }
+        .controls button {
+            padding: 8px 20px;
+            border: 1px solid #333;
+            border-radius: 6px;
+            background: #1a1a1a;
+            color: #e0e0e0;
+            font-family: inherit;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .controls button:hover:not(:disabled) {
+            background: #252525;
+            border-color: #444;
+        }
+        .controls button:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        .controls button.primary {
+            background: #1d4ed8;
+            border-color: #2563eb;
+            color: #fff;
+        }
+        .controls button.primary:hover:not(:disabled) {
+            background: #2563eb;
+        }
+        .controls button.danger {
+            border-color: #dc2626;
+            color: #dc2626;
+        }
+        .sidebar {
+            border-left: 1px solid #222;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .sidebar-section {
+            padding: 16px;
+            border-bottom: 1px solid #222;
+        }
+        .sidebar-section h2 {
+            font-size: 12px;
+            font-weight: 600;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 12px;
+        }
+        .coord-display {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+        }
+        .coord-card {
+            background: #111;
+            border: 1px solid #222;
+            border-radius: 6px;
+            padding: 12px;
+            text-align: center;
+        }
+        .coord-card .axis {
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 4px;
+        }
+        .coord-card .value {
+            font-size: 24px;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+        .coord-card .unit {
+            font-size: 10px;
+            color: #555;
+            margin-top: 2px;
+        }
+        .coord-card.x .value { color: #ef4444; }
+        .coord-card.y .value { color: #22c55e; }
+        .coord-card.z .value { color: #3b82f6; }
+        .object-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+        .object-list h2 {
+            font-size: 12px;
+            font-weight: 600;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 12px;
+        }
+        .object-item {
+            background: #111;
+            border: 1px solid #222;
+            border-radius: 6px;
+            padding: 10px 12px;
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+        }
+        .object-item .name { color: #fff; font-weight: 500; }
+        .object-item .coords { color: #666; font-variant-numeric: tabular-nums; }
+        .log-section {
+            padding: 16px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .log-section h2 {
+            font-size: 12px;
+            font-weight: 600;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 8px;
+        }
+        #log {
+            font-size: 11px;
+            color: #555;
+            line-height: 1.6;
+        }
+        #log .entry { border-bottom: 1px solid #111; padding: 2px 0; }
+        .fps-display {
+            font-size: 11px;
+            color: #666;
+            padding: 4px 10px;
+            background: #111;
+            border-radius: 4px;
+        }
+        .latency-display {
+            font-size: 11px;
+            color: #f59e0b;
+            padding: 4px 10px;
+            background: #111;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Drone Coordinate Tracker</h1>
+        <div style="display: flex; gap: 8px; align-items: center;">
+            <div class="latency-display" id="latencyDisplay">latency: --ms</div>
+            <div class="fps-display" id="fpsDisplay">-- fps</div>
+            <div class="status" id="statusBadge">disconnected</div>
+        </div>
+    </div>
+    <div class="main">
+        <div class="video-panel">
+            <div class="video-container">
+                <div class="video-box">
+                    <div class="label">INPUT</div>
+                    <video id="localVideo" autoplay playsinline muted></video>
+                </div>
+                <div class="video-box">
+                    <div class="label">TRACKED</div>
+                    <video id="remoteVideo" autoplay playsinline></video>
+                </div>
+            </div>
+            <div class="controls">
+                <button id="btnCamera" class="primary">Start Camera</button>
+                <button id="btnStream" disabled>Stream to GPU</button>
+                <button id="btnStop" class="danger" disabled>Stop</button>
+            </div>
+        </div>
+        <div class="sidebar">
+            <div class="sidebar-section">
+                <h2>Primary Target</h2>
+                <div class="coord-display">
+                    <div class="coord-card x">
+                        <div class="axis">X</div>
+                        <div class="value" id="coordX">--</div>
+                        <div class="unit">norm</div>
+                    </div>
+                    <div class="coord-card y">
+                        <div class="axis">Y</div>
+                        <div class="value" id="coordY">--</div>
+                        <div class="unit">norm</div>
+                    </div>
+                    <div class="coord-card z">
+                        <div class="axis">Z</div>
+                        <div class="value" id="coordZ">--</div>
+                        <div class="unit">m</div>
+                    </div>
+                </div>
+            </div>
+            <div class="object-list">
+                <h2>Detected Objects</h2>
+                <div id="objectList">
+                    <div style="color: #444; font-size: 12px;">No detections yet</div>
+                </div>
+            </div>
+            <div class="log-section">
+                <h2>Log</h2>
+                <div id="log"></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="/static/app.js"></script>
+</body>
+</html>
