@@ -1,0 +1,30 @@
+
+========================================================
+  FP8 vs BF16 INFERENCE BENCHMARK
+  Model: NVIDIA-Nemotron-3-Nano-30B-A3B
+  GPU:   NVIDIA H100 80GB HBM3
+========================================================
+
+THROUGHPUT
+  BF16:     104.1 tok/s
+  FP8:      159.5 tok/s
+  Speedup: 1.53x
+
+LATENCY (per prompt)
+  BF16 avg: 23.733s   p50: 25.401s   p90: 25.716s
+  FP8  avg: 16.503s   p50: 20.409s   p90: 24.913s
+  Avg reduction: 30.5%
+
+MEMORY (from vLLM model loading logs)
+  BF16 model: 58.91 GiB   total: 76.90 GiB
+  FP8  model: 30.52 GiB   total: 51.00 GiB
+  Model weight saving: 48.2%
+
+QUALITY (word-overlap similarity)
+  Average: 0.170  (>0.3 similar, >0.5 very similar)
+
+LOAD TIME
+  BF16: 117.1s   FP8: 2016.5s
+  (FP8 load time includes first-time Flashinfer Fp8 MoE autotuning)
+
+========================================================

@@ -14,14 +14,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <span className="text-destructive font-semibold">:</span>
             <span className="font-semibold">zero</span>
           </Link>
-          <nav className="flex items-center gap-6">
-            <Link href="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors duration-150">
-              projects
-            </Link>
-            <Link href="/projects/new" className="text-muted-foreground hover:text-foreground transition-colors duration-150">
-              new scan
-            </Link>
-          </nav>
         </div>
         <div className="flex items-center gap-4">
           <ThemeToggle />

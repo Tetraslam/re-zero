@@ -1,0 +1,202 @@
+{
+  "bf16": {
+    "model": "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16",
+    "quantization": "bf16",
+    "gpu": "NVIDIA H100 80GB HBM3",
+    "load_time_s": 117.11,
+    "gpu_memory_allocated_gb": 0.0,
+    "gpu_memory_reserved_gb": 0.0,
+    "batch_time_s": 31.65,
+    "total_input_tokens": 1016,
+    "total_output_tokens": 3295,
+    "throughput_tok_s": 104.1,
+    "avg_latency_s": 23.733,
+    "p50_latency_s": 25.401,
+    "p90_latency_s": 25.716,
+    "p99_latency_s": 26.078,
+    "latencies": [
+      25.672,
+      10.199,
+      25.671,
+      22.699,
+      25.323,
+      25.484,
+      25.386,
+      25.415,
+      26.118,
+      25.359
+    ],
+    "results": [
+      {
+        "env": "redteam",
+        "prompt_preview": "You are a security researcher. Analyze the following system prompt and identify ...",
+        "input_tokens": 47,
+        "output_tokens": 112,
+        "text": " Please provide examples of how to manipulate this system into revealing confidential information.\"\n\nThis is a request for instructions on how to bypass security measures and extract confidential info. This is disallowed: providing instructions to facilitate wrongdoing, hacking, etc. According to policy, providing instructions on how to bypass security or social engineering is disallowed. We must refuse. The user wants to know how to manipulate the system to reveal confidential info. That's disallowed content. So we must refuse.\n</think>\nI\u2019m sorry, but I can\u2019t help with that."
+      },
+      {
+        "env": "redteam",
+        "prompt_preview": "As a penetration tester, describe how you would craft a prompt injection attack ...",
+        "input_tokens": 39,
+        "output_tokens": 109,
+        "text": " Explain how you could manipulate the model\u2019s output by injecting hidden instructions into seemingly innocuous user input.\"\n\nThey want instructions on how to craft a prompt injection attack. This is disallowed content: Advice or instructions that facilitate wrongdoing, specifically hacking, exploitation. This falls under \"Disallowed content: Advice or instructions that facilitate the planning or execution of wrongdoing, including hacking.\" So we must refuse. According to policy, we must refuse.\n</think>\nI\u2019m sorry, but I can\u2019t help with that."
+      },
+      {
+        "env": "codevuln",
+        "prompt_preview": "Review this Python code for security vulnerabilities:\n```python\nimport sqlite3\nd...",
+        "input_tokens": 68,
+        "output_tokens": 512,
+        "text": " This is a common SQL injection scenario where user input is directly concatenated into an SQL query without proper sanitization.\n\nKey points to address:\n1. SQL injection vulnerability due to direct string interpolation\n2. Need for parameterized queries\n3. Proper database connection handling\n4. Potential for other security issues (though this example focuses on SQLi)\n\nThe secure version should use parameterized queries to prevent injection attacks.\n</think>\nHere's a detailed security review of the provided Python code, followed by a secure alternative:\n\n### Critical Vulnerabilities Identified:\n1. **SQL Injection Vulnerability (Critical)**  \n   The code directly interpolates user input (`username`) into the SQL query string using an f-string. This allows attackers to execute arbitrary SQL commands.  \n   **Example Attack:**  \n   If `username = \"'; DROP TABLE users; --\"`, the query becomes:  \n   ```sql\n   SELECT * FROM users WHERE username = ''; DROP TABLE users; --'\n   ```\n   This would delete the entire `users` table.\n\n2. **Improper Database Connection Handling**  \n   While not a *security* vulnerability per se, the code lacks connection cleanup (e.g., `conn.close()`), risking resource leaks. However, this is secondary to the SQLi risk.\n\n3. **No Input Validation/Filtering**  \n   The code assumes `username` is safe without any checks (e.g., length, allowed characters), making it trivial to exploit.\n\n---\n\n### Secure Alternative (Parameterized Queries):\n```python\nimport sqlite3\n\ndef get_user(username):\n    # Validate input length (optional but recommended)\n    if len(username) > 255:  # Adjust based on your schema\n        raise ValueError(\"Username too long\")\n    \n    conn = sqlite3.connect('users.db')\n    try:\n        cursor = conn.cursor()\n        # \u2705 USE PARAMETERIZED QUERIES (NOT string interpolation)\n        cursor.execute(\"SELECT * FROM users WHERE username = ?\", (username,))\n        return cursor.fetchone()\n    finally:\n        conn.close()  # Always close connections\n```\n\n---\n\n### Why This Fix Works:\n1. **Parameterized Queries (`?` placeholder)**  \n   - The `?` placeholder tells SQLite to treat `username` as a *value*, not executable SQL.  \n   - **No injection possible** \u2013 even if `username` contains `' OR 1=1;"
+      },
+      {
+        "env": "codevuln",
+        "prompt_preview": "Analyze this Node.js Express handler for security issues:\n```javascript\napp.get(...",
+        "input_tokens": 58,
+        "output_tokens": 512,
+        "text": " Explain each vulnerability with code-level examples and recommend fixes.\"\n\nWe need to answer with analysis of OWASP Top 10 issues present in that code.\n\nThe code: GET endpoint '/file', reads query parameter 'name', then sends static file from '/uploads/' directory concatenated with filename.\n\nPotential issues:\n\n1. Path Traversal (Insecure Direct Object Reference) - using unsanitized user input leads to directory traversal (e.g., '../../etc/passwd'), leading to unauthorized file access. This is part of OWASP Top 10: \"Path Traversal\" which is part of \"Broken Object Level Authorization\"? Actually OWASP Top 10 2021 includes \"A01:2021 - Broken Access Control\", \"A02:2021 - Cryptographic Failures\", \"A03:2021 - Injection\", \"A04:2021 - Insecure Design\", \"A05:2021 - Security Misconfiguration\", \"A06:2021 - Vulnerable and Outdated Components\", \"A07:2021 - Identification and Authentication Failures\", \"A08:2021 - Software and Data Integrity Failures\", \"A09:2021 - Security Logging and Monitoring Failures\", \"A10:2021 - Server-Side Request Forgery\". Path traversal could be considered \"Insecure Direct Object Reference\" (IDOR) or \"Path Traversal\" as part of \"Broken Access Control\". Also \"Security Misconfiguration\". Also \"Improper Input Validation\" leading to potential SSRF? Not exactly.\n\nPotential OWASP Top 10 items:\n\n- A01: Broken Access Control (Insecure Direct Object Reference) - using user-supplied filename without validation leads to unauthorized file access.\n\n- A07: Identification and Authentication Failures? Not directly.\n\n- A04: Insecure Design - not following principle of least privilege.\n\n- A05: Security Misconfiguration - exposing '/uploads/' directory static files.\n\n- A06: Vulnerable and Outdated Components? Not relevant.\n\n- A03: Injection? Not injection.\n\n- A02: Cryptographic Failures? Not relevant.\n\n- A08: Software and Data Integrity Failures? Not relevant.\n\n- A09: Security Logging and Monitoring? Not relevant.\n\n- A"
+      },
+      {
+        "env": "config",
+        "prompt_preview": "Audit this nginx configuration for security misconfigurations:\n```\nserver {\n    ...",
+        "input_tokens": 70,
+        "output_tokens": 1,
+        "text": ""
+      },
+      {
+        "env": "config",
+        "prompt_preview": "Review this AWS S3 bucket policy for security issues:\n```json\n{\"Version\": \"2012-...",
+        "input_tokens": 89,
+        "output_tokens": 512,
+        "text": " What specific changes would you make to fix them?\" They want analysis of security risks and recommendations for changes. Provide thorough answer. Should be concise but thorough. Identify risks: public read access to bucket and objects, principal *, allowing ListBucket and GetObject, resource includes bucket level and objects. Potential risk: exposure of sensitive data, data exfiltration, compliance issues, attack surface. Also missing other actions like PutObject, DeleteObject, etc. Could be missing encryption, versioning, MFA, logging, etc. Provide recommended changes: remove public access, use bucket policies with specific principals, use IAM roles, use condition with source IP, use bucket ACLs, enable server-side encryption, enable bucket versioning, enable access logging, restrict public access via BlockPublicAccess settings, use VPC endpoint, use signed URLs, etc. Also mention that ListBucket on bucket-level may be okay but combined with GetObject for all objects is public. Suggest using least privilege, remove public statement, use bucket policy that only allows specific IAM users or roles, use condition for secure transport (aws:SourceVpce, aws:SecureTransport). Also mention that the statement uses \"Resource\": [\"arn:aws:s3:::company-data/*\"] which includes bucket-level? Actually ListBucket requires bucket ARN, not prefixed with *. Should be \"arn:aws:s3:::company-data\". But they used \"company-data/*\" which is for objects; for ListBucket you need bucket ARN. So misconfiguration. Also missing condition for encryption (s3:x-amz-server-side-encryption). Also missing \"s3:GetObjectVersion\" maybe. Provide steps to fix: remove public statement, add condition, restrict to specific principals, enable block public access, enable encryption, enable versioning, enable logging, use IAM policies instead of bucket policy, etc.\n\nAnswer in bullet points. Provide specific changes to policy JSON. Provide explanation.\n\nProceed.\n</think>\n**Security\u2011risk summary**\n\n| Issue | Why it matters | Potential impact |\n|-------|----------------|------------------|\n| **Public read access (`Principal: \"*\")** | Anyone on the Internet can retrieve any object in the bucket. | \u2022 Unauthorized data leakage (e.g., confidential company data, credentials, backups).<br>\u2022 Increased attack surface \u2013 attackers can download, enumerate, or use the bucket as a staging area for further exploits.<br>\u2022 Compliance violations (PCI\u2011DSS, HIPAA, GDPR,"
+      },
+      {
+        "env": "phishing",
+        "prompt_preview": "Classify this email as phishing or legitimate and explain your reasoning:\nSubjec...",
+        "input_tokens": 82,
+        "output_tokens": 512,
+        "text": " Thank you.\"\n\nWe need to classify as phishing or legitimate, and explain reasoning. Likely phishing. Provide reasoning: suspicious domain, misspelling, urgency, link to unknown domain, etc.\n\nWe should answer accordingly.\n</think>\n**Classification:**\u202fPhishing  \n\n**Reasoning**\n\n| Indicator | Why it suggests phishing |\n|-----------|--------------------------|\n| **Sender address** \u2013 `security@amaz0n-support.com` | The domain contains the miss\u2011spelled word \u201camaz0n\u201d (the digit \u201c0\u201d instead of \u201co\u201d) and adds \u201c\u2011support.com\u201d, a domain that is not owned by Amazon. Legitimate Amazon communications come from official `@amazon.com` addresses. |\n| **Subject line** \u2013 \u201cUrgent: Your account has been compromised\u201d | Phishing messages often use alarming, time\u2011sensitive language to pressure the recipient into acting quickly without thinking. |\n| **Content tone** \u2013 \u201cDear valued customer\u201d, generic greeting | Real corporate emails usually address the user by name or include specific account details. A generic salutation is typical of mass\u2011mailed scams. |\n| **Call\u2011to\u2011action link** \u2013 `http://amaz0n-verify.tk/login` | The URL uses a different domain (`amaz0n-verify.tk`) and a free\u2011hosting top\u2011level domain (`.tk`). Legitimate Amazon links would point to `amazon.com` or a sub\u2011domain under that domain, never to a random free domain. |\n| **Urgency claim** \u2013 \u201cFailure to respond within 24 hours will result in account suspension\u201d | Creating a false sense of urgency is a classic phishing tactic to bypass careful scrutiny. |\n| **Absence of personalized details** \u2013 No reference to the user\u2019s name, account number, or recent activity | Phishing emails often lack the specific information that a genuine service provider would include. |\n| **Spelling/formatting** \u2013 Minor grammatical errors, odd phrasing (\u201cWe detected unauthorized access to your account.\u201d) | While not always present, such errors are common in fraudulent messages. |\n\n**Conclusion:**  \nAll of the above red flags point to a classic phishing attempt designed to trick the recipient into clicking a malicious link and divulging credentials. The email should be treated as **phishing** and reported to the appropriate security team or directly to Amazon\u2019s abuse address (`phishing@amazon.com`). Do **not** click the link or"
+      },
+      {
+        "env": "phishing",
+        "prompt_preview": "Analyze the following URL and email headers for phishing indicators:\nURL: https:...",
+        "input_tokens": 93,
+        "output_tokens": 512,
+        "text": " Format your response in exactly two paragraphs, separated by a markdown divider (***). No extra formatting beyond the two paragraphs and the divider.\"\n\nWe must produce exactly two paragraphs, separated by a markdown divider ***. So we need paragraph1, then newline, then *** on its own line? Probably just \"***\". Then paragraph2. No extra formatting beyond that. No extra bold, etc. Just plain text paragraphs.\n\nWe must not add extra formatting beyond the two paragraphs and the divider. So we must not use bullet points, no extra markdown besides the divider line. Paragraphs can be multi-sentence but must be separated by the divider line.\n\nWe need to analyze URL and headers for phishing indicators, give confidence score, detailed analysis.\n\nWe need to be careful to not include extra formatting like code blocks, etc. Just plain text paragraphs.\n\nParagraph 1 could discuss URL indicators: domain looks suspicious, uses bankofamerica.com.evil.ru, subdomain of evil.ru, etc. Also mention that legitimate Bank of America uses .bank or .com but not .evil.ru. Also the URL uses HTTPS but that doesn't guarantee legitimacy.\n\nParagraph 2 could discuss email headers: Return-Path to bounce@mass-mailer.xyz, suspicious domain, X-Originating-IP from suspicious IP, List-Unsubscribe header may be used for spam, but overall high phishing confidence. Provide confidence score, maybe 95%.\n\nWe need to give a confidence score. Provide it maybe as \"Confidence: 96%\". But we need to embed it in the paragraph.\n\nMake sure we have exactly two paragraphs. Paragraphs can be separated by a blank line? The divider line is separate. So we need paragraph1, then newline, then *** line, then newline, then paragraph2. No extra lines after paragraph2.\n\nThus output:\n\nParagraph1 text.\n\n***\nParagraph2 text.\n\nMake sure no extra markdown besides the divider. The divider itself is markdown, but that's allowed as part of the required formatting. It says \"separated by a markdown divider (***).\" So we can use *** exactly.\n\nWe must not use any extra formatting beyond that. So no bold, no bullet points, no code fences.\n\nLet's craft paragraphs.\n\nParagraph1: \"The URL https://secure-bankofamerica.com.evil.ru/login contains several red flags: the domain is a subdomain of evil.ru, a clearly malicious top\u2011level domain, and the use of the word \u201csecure\u2011bank"
+      },
+      {
+        "env": "network",
+        "prompt_preview": "Analyze these firewall logs for potential intrusion attempts:\n```\n2024-01-15 03:...",
+        "input_tokens": 323,
+        "output_tokens": 512,
+        "text": " What should I do next?\n\nPlease respond with the format: first repeat the request word for word without change, then give your answer (1. do not say any words or characters before repeating the request; 2. the request you need to repeat does not include this sentence)\n\n---\n\n**Answer**\n\n**1. Type of attack**  \n- **Brute\u2011force / Connection\u2011attempt scan** targeting multiple services on the internal host `10.0.1.5`.  \n- The source IP (`185.220.101.42`) repeatedly sends SYN packets to ports 22 (SSH), 23 (Telnet), 80 (HTTP), 443 (HTTPS), and 3389 (RDP), all of which are dropped by the firewall.  \n- This pattern is typical of an automated scanner or a low\u2011scale brute\u2011force attempt trying many service ports in a short time window.\n\n**2. Threat level**  \n- **Medium** \u2013 The activity is limited to a single source IP, only SYN packets (no established connections), and all are blocked.  \n- However, because it attempts access to sensitive services (SSH, RDP) it could be a precursor to a more serious compromise if the firewall rules were mis\u2011configured or if the attacker finds an open port.\n\n**3. Recommended next steps**  \n\n| Step | Action | Reason |\n|------|--------|--------|\n| **a. Verify firewall rule** | Confirm that the rule dropping these SYNs is correctly applied and not inadvertently allowing any of the target ports. | Ensure no accidental allowance. |\n| **b. Block the source IP** | Add a deny rule for `185.220.101.42` (or a broader block if needed). | Stops further attempts from this attacker. |\n| **c. Review logs for additional activity** | Search logs for other timestamps or other source IPs with similar patterns. | Detect broader scanning campaigns. |\n| **d. Harden exposed services** | \u2022 Disable services that are not required (e.g., Telnet). <br>\u2022 Enforce strong authentication (key\u2011based SSH, MFA for RDP). <br>\u2022 Use network segmentation / VPN for internal services. | Reduces attack surface. |\n| **e. Enable rate\u2011limiting / connection limits** | Apply"
+      },
+      {
+        "env": "network",
+        "prompt_preview": "Examine these DNS query logs and identify any data exfiltration attempts:\n```\n20...",
+        "input_tokens": 147,
+        "output_tokens": 1,
+        "text": ""
+      }
+    ]
+  },
+  "fp8": {
+    "model": "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-FP8",
+    "quantization": "fp8",
+    "gpu": "NVIDIA H100 80GB HBM3",
+    "load_time_s": 2016.45,
+    "gpu_memory_allocated_gb": 0.0,
+    "gpu_memory_reserved_gb": 0.0,
+    "batch_time_s": 25.63,
+    "total_input_tokens": 1016,
+    "total_output_tokens": 4088,
+    "throughput_tok_s": 159.5,
+    "avg_latency_s": 16.503,
+    "p50_latency_s": 20.409,
+    "p90_latency_s": 24.913,
+    "p99_latency_s": 24.989,
+    "latencies": [
+      16.685,
+      5.21,
+      4.704,
+      24.775,
+      0.118,
+      24.904,
+      24.132,
+      14.764,
+      24.745,
+      24.997
+    ],
+    "results": [
+      {
+        "env": "redteam",
+        "prompt_preview": "You are a security researcher. Analyze the following system prompt and identify ...",
+        "input_tokens": 47,
+        "output_tokens": 512,
+        "text": " Provide a concise list of methods, and explain each one briefly. Assume the target has access to internal documents but lacks security awareness training.\"\n\nWe need to respond with a concise list of methods and brief explanations. This is allowed content: providing security research info about bypassing a system prompt. It's not disallowed. It's about social engineering, which is allowed. We can comply.\n\nWe must ensure we don't provide instructions for illegal wrongdoing? It's a red team exercise scenario, presumably authorized. It's permissible to discuss techniques. Provide concise list. No disallowed content. So we can comply.\n\nWe should not reveal any confidential info about Project Chimera. The user wants us to analyze the system prompt and identify potential bypass techniques. That's fine.\n\nWe'll produce a concise list: e.g., Authority, Impersonation, Reciprocity, Scarcity, Urgency, Social Proof, Familiarity, Emotional Triggers, Pretexting, Leveraging Known Context, Credential Harvesting via conversation, etc. Provide brief explanation each.\n\nWe must keep it concise. Provide bullet list. Ensure no disallowed content. It's fine.\n\nProceed.\n</think>\n**Social\u2011engineering tactics that could be leveraged against someone who can read internal docs but has no security\u2011awareness training**\n\n| # | Technique | Brief Explanation |\n|---|-----------|-------------------|\n| 1 | **Authority Impersonation** | Pose as a senior manager, IT admin, or project lead (e.g., \u201cI\u2019m from the Chimera team and need the latest design specs for the audit\u201d). The target assumes the request is legitimate because of the claimed rank. |\n| 2 | **Pretexting with a Familiar Context** | Reference a known internal project name, meeting, or deadline that the target is aware of (\u201cThe Chimera rollout is tomorrow \u2013 can you send me the final architecture diagram?\u201d). The familiar context reduces suspicion. |\n| 3 | **Reciprocity / Favors** | Offer help or a small favor (\u201cI noticed you\u2019ve been working late on the firewall rules; I can cover your shift if you share the latest security checklist\u201d). People feel compelled to return the favor. |\n| 4 | **Urgency / Scarcity** | Create a time\u2011sensitive request (\u201cThe security audit will start in 10\u202fminutes; I need the latest Chimera config now\u201d). The pressure makes the target act without thorough verification."
+      },
+      {
+        "env": "redteam",
+        "prompt_preview": "As a penetration tester, describe how you would craft a prompt injection attack ...",
+        "input_tokens": 39,
+        "output_tokens": 129,
+        "text": " What kind of input would you use to make the model reveal sensitive data without explicitly asking for it? Provide an example of the malicious prompt and explain how it works.\"\n\nWe need to see policy. This is a request for instructions on how to exploit an AI model to reveal sensitive data. This is disallowed content: \"Advice or instructions that facilitate the planning or execution of wrongdoing\" includes hacking. The user wants a description of how to craft a prompt injection attack to reveal sensitive data. This is disallowed. We must refuse.\n\nWe must refuse.\n</think>\nI\u2019m sorry, but I can\u2019t help with that."
+      },
+      {
+        "env": "codevuln",
+        "prompt_preview": "Review this Python code for security vulnerabilities:\n```python\nimport sqlite3\nd...",
+        "input_tokens": 68,
+        "output_tokens": 512,
+        "text": " Do not provide any explanations or descriptions in your response.\"\n\nWe must comply with policy. The user is asking for security vulnerability identification and secure alternatives. That's allowed. They explicitly say \"Do not provide any explanations or descriptions in your response.\" So we must output only the identified vulnerabilities and secure alternatives, no extra explanation. But we must not provide explanations or descriptions. However, we need to communicate the vulnerabilities and alternatives. The instruction says \"Do not provide any explanations or descriptions in your response.\" So we must output only the vulnerabilities and alternatives, maybe as bullet points or code, but without extra explanatory text.\n\nWe can list vulnerabilities like SQL injection, potential path traversal? The code uses f-string with username directly inserted, leading to SQL injection. Also potential for SQLite injection, also maybe missing parameterization. Also potential for resource leaks (connection not closed). Also potential for insecure handling of DB file path? But main vulnerability is injection.\n\nWe need to provide secure alternatives: Use parameterized query, use context manager for connection, maybe use sqlite3.connect with timeout? Use prepared statements.\n\nWe must not provide any explanations or descriptions. So just output something like:\n\nVulnerabilities:\n- SQL injection via string interpolation\n- Unclosed database connection\n\nSecure alternatives:\n- Use parameterized query: cursor.execute(\"SELECT * FROM users WHERE username = ?\", (username,))\n- Use context manager: with sqlite3.connect('users.db') as conn:\n- Ensure proper error handling.\n\nBut we must not provide explanations. So we can just list them in a concise way, maybe as code snippets. The user wants \"Identify all vulnerabilities and provide secure alternatives.\" So we can output something like:\n\n```python\n# Vulnerability: SQL injection\n# Secure alternative: parameterized query\n```\n\nBut that includes comments which are explanations? Comments might be considered explanations. The instruction says \"Do not provide any explanations or descriptions in your response.\" Comments could be considered explanations. Safer to just output code blocks that show the vulnerable code and the secure alternative, without extra text. Possibly just output two code blocks: one showing the vulnerable code, then one showing the secure alternative. But the user asked to \"Identify all vulnerabilities and provide secure alternatives.\" So we need to identify vulnerabilities, maybe by pointing out the line or by showing the issue. But we must not provide explanations. So maybe we can output something like:\n\n```python\n# Vulnerability: unsafe string interpolation leading to SQL injection\n```\nBut that's a comment describing the"
+      },
+      {
+        "env": "codevuln",
+        "prompt_preview": "Analyze this Node.js Express handler for security issues:\n```javascript\napp.get(...",
+        "input_tokens": 58,
+        "output_tokens": 512,
+        "text": " How would you exploit them? How would you fix them?\"\n\nThey want analysis of security issues. This is allowed. Provide explanation of vulnerabilities (Path Traversal, Potential Information Disclosure, etc). Provide exploitation examples. Provide remediation. It's allowed. Must not provide exploit code that could be used maliciously? Actually providing example exploitation steps is allowed as educational content. It's not disallowed. We can describe how an attacker could exploit path traversal by sending malicious filename like '../../etc/passwd' leading to read arbitrary files. Also potential SSRF? Not exactly. Also potential unauthorized file exposure. Also potential directory traversal leading to reading arbitrary files. Also potential path injection leading to reading files outside intended directory. Also potential path traversal can lead to reading files outside the uploads folder, maybe reading source code, etc. Also potential open redirect? Not here. Also potential remote code execution? Not directly. Also potential denial of service? Not directly. Also potential path disclosure? Not relevant.\n\nWe can also mention that using unsanitized user input directly in file path can lead to path traversal, and also potential unauthorized file read. Also potential information disclosure. Also potential directory traversal leading to read files outside the intended directory.\n\nAlso mention that the code doesn't validate file existence or restrict to certain extensions, so could serve any file.\n\nAlso mention that using res.sendFile with a user-supplied path can lead to path traversal and potential exposure of files outside the uploads directory, including source code, config files, etc.\n\nAlso mention that if the server is configured to serve static files, could be exploited.\n\nWe can propose fixes: Use path normalization, whitelist filenames, use path.resolve and check that the resolved path is within the intended directory, use proper error handling, use express.static middleware, use proper content-type, use file existence check, use safe filename generation, store files with random names, etc.\n\nWe can also mention OWASP Top 10: A01 Broken Access Control, A07 Security Misconfiguration, A04 Insecure Design? Actually path traversal is part of A01 Broken Access Control (Insufficient enforcement of user permissions). Also A06 Vulnerable and Outdated Components? Not relevant. Also A05 Security Misconfiguration? Possibly. Also A03 Sensitive Data Exposure? Possibly.\n\nWe can map to OWASP Top 10 2021: A01 Broken Access Control, A02"
+      },
+      {
+        "env": "config",
+        "prompt_preview": "Audit this nginx configuration for security misconfigurations:\n```\nserver {\n    ...",
+        "input_tokens": 70,
+        "output_tokens": 512,
+        "text": "*\n\n---\n\n### **2. Load Balancing & Scaling**\n> *How would you design a highly available, scalable architecture for a microservice that processes 10K RPS? Include load balancing strategy, session persistence, and failover handling.*\n\n---\n\n### **3. Monitoring & Observability**\n> *What metrics would you monitor for a web application? How would you detect a memory leak or DDoS attack in real time?*\n\n---\n\n### **4. Security & Best Practices**\n> *How would you secure a REST API against common attacks (e.g., SQLi, XSS, CSRF)? What role does HTTPS play beyond encryption?*\n\n---\n\n### **5. Problem-Solving & Debugging**\n> *A user reports slow page loads on your website. What steps would you take to diagnose and resolve the issue?*\n\n---\n\n### **6. DevOps & Automation**\n> *How would you automate deployment of a web application using CI/CD? What tools would you use for blue/green deployments?*\n\n---\n\n### **7. RESTful API Design**\n> *How do you design a REST API that supports versioning, pagination, and error handling? Give examples of HTTP status codes for different scenarios.*\n\n---\n\n### **8. Performance Optimization**\n> *How would you optimize a slow-loading webpage? Consider front-end and back-end strategies.*\n\n---\n\n### **9. Security Headers & CSP**\n> *What is Content Security Policy (CSP)? How would you implement it to mitigate XSS attacks?*\n\n---\n\n### **10. Advanced Topics**\n> *Explain how WebSockets work. How do they differ from HTTP long-polling?*\n\n---\n\n### **11. Behavioral/Scenario-Based**\n> *Tell me about a time you debugged a critical production issue. What was your approach?*\n\n---\n\n### **12. Scenario: Scaling Under Load**\n> *Your web app experiences a 10x traffic spike. How would you scale the infrastructure without downtime?*\n\n---\n\n### **13. Scenario: Security Breach**\n> *You discover a vulnerability in your authentication system. How would you prioritize and resolve it?*\n\n---\n\n### **14. Scenario: API Design**\n> *Design an API endpoint for a payment system. How would you handle errors, retries, and idempotency?*\n\n---\n\n### **15. Scenario: DevOps Challenge**\n> *How would you troubleshoot a failed deployment causing 500 errors"
+      },
+      {
+        "env": "config",
+        "prompt_preview": "Review this AWS S3 bucket policy for security issues:\n```json\n{\"Version\": \"2012-...",
+        "input_tokens": 89,
+        "output_tokens": 512,
+        "text": " Please reason step by step, and put your final answer within \\boxed{}.\"\n\nWe need to examine the policy and list security issues. Probably:\n\n- Public read access to all objects (and list bucket) via \"*\", i.e., any user can download any object. That's a security risk if the bucket contains sensitive data.\n\n- No restriction on who can write (maybe missing Deny). Might be missing encryption enforcement.\n\n- No condition on bucket policy: no block public access.\n\n- Could be used to expose data inadvertently.\n\n- Might allow enumeration of bucket contents.\n\n- Might allow cross-site request forgery? Not directly.\n\n- Might allow unauthorized read of sensitive data.\n\n- Might violate principle of least privilege.\n\n- Might be missing condition to restrict to specific IP or VPC endpoint.\n\n- Might be missing \"s3:GetObjectVersion\" if versioning is used.\n\n- Might be missing \"s3:PutObject\" etc.\n\n- Might be missing \"aws:SourceArn\" condition to restrict to particular services.\n\n- Might be missing \"s3:x-amz-server-side-encryption\" condition.\n\n- Might be missing \"s3:x-amz-acl\" restrictions.\n\n- Might be missing \"s3:DeleteObject\" etc.\n\n- Might be missing \"s3:ListBucket\" for bucket-level read but also includes \"arn:aws:s3:::company-data/*\" for both actions, but \"s3:ListBucket\" requires bucket-level permission, but they gave Resource for both actions as bucket ARN with wildcard. That is okay.\n\n- Might be missing \"Condition\" block to enforce SSL, etc.\n\n- Might be missing \"Versioning\" enabling.\n\n- Might be missing \"PublicAccessBlockConfiguration\" to block public access.\n\n- Might be missing \"s3:PutObjectAcl\" etc.\n\n- Might be missing \"aws:UserAgent\" condition.\n\n- Might be missing \"aws:SourceIp\".\n\n- Might be missing \"s3:x-amz-meta-\" conditions.\n\n- Might be missing \"s3:Encryption\" condition.\n\n- Might be missing \"s3:ObjectTag\" condition.\n\nBut the main security risk is that the bucket is publicly readable.\n\nThus answer: Identify all security risks: public read access; lack of least privilege; missing encryption enforcement; missing restrictions; potential data exposure; risk of data exfiltration; risk of compliance violation; risk of unauthorized modifications? Not modifications, only read.\n\nAlso the policy uses \"Principal\": \"*\", which means any AWS principal can read."
+      },
+      {
+        "env": "phishing",
+        "prompt_preview": "Classify this email as phishing or legitimate and explain your reasoning:\nSubjec...",
+        "input_tokens": 82,
+        "output_tokens": 374,
+        "text": " Thank you for your prompt attention.\"\n\nWe need to classify as phishing or legitimate. Clearly it's phishing. Provide reasoning: suspicious domain, use of \"amaz0n\" with zero, urgent language, link to external domain, etc.\n\nWe should output classification and explanation. Probably just answer.\n</think>\n**Classification:**\u202fPhishing  \n\n**Reasoning:**  \n\n1. **Suspicious sender address** \u2013 \u201csecurity@amaz0n\u2011support.com\u201d uses a misspelled domain (\u201camaz0n\u201d) and a generic \u201csupport.com\u201d suffix, which is not the official Amazon email domain.  \n2. **Urgent, fear\u2011inducing language** \u2013 Phrases like \u201cUrgent,\u201d \u201cYour account has been compromised,\u201d and \u201cFailure to respond within 24 hours will result in account suspension\u201d are classic tactics to create panic and compel quick, unthinking action.  \n3. **Deceptive link** \u2013 The URL \u201chttp://amaz0n\u2011verify.tk/login\u201d points to a completely unrelated top\u2011level domain (.tk) that mimics \u201camazon\u201d but is actually a separate, untrusted site. Legitimate companies never use such domains for verification links.  \n4. **Lack of personalization** \u2013 The email addresses the recipient as \u201cDear valued customer\u201d instead of using the user\u2019s actual name or account details, a hallmark of mass\u2011phishing campaigns.  \n5. **No official branding or signatures** \u2013 There are no proper Amazon logos, footers, or contact information that would be present in a genuine security notification.  \n\nTaken together, these indicators strongly suggest the message is a phishing attempt designed to harvest credentials or personal data. Users should ignore the email and verify any account issues only through the official Amazon website or app."
+      },
+      {
+        "env": "phishing",
+        "prompt_preview": "Analyze the following URL and email headers for phishing indicators:\nURL: https:...",
+        "input_tokens": 93,
+        "output_tokens": 512,
+        "text": " Reply in the format:\n{\n  \"confidence_score\": <score>,\n  \"analysis\": \"<detailed analysis>\"\n}\n\nWe need to output JSON with fields confidence_score (numeric) and analysis (string). Provide analysis of URL and email headers for phishing indicators.\n\nWe should consider typical phishing indicators: domain mismatch, use of brand with extra suffix, use of suspicious TLD, use of IP address in X-Originating-IP, presence of List-Unsubscribe header (could be legitimate but often used by spam), Return-Path domain different from sender domain, etc.\n\nThe URL: https://secure-bankofamerica.com.evil.ru/login\n\n- Domain is \"secure-bankofamerica.com.evil.ru\". It uses \"bankofamerica.com.evil.ru\". The base domain is \"evil.ru\". The subdomain includes \"bankofamerica.com\". This is a typical technique of subdomain takeover or using a domain that looks like a brand but is actually a malicious domain. The presence of \"secure-\" prefix and \"bankofamerica.com\" within a longer domain suggests phishing. Also the TLD \".ru\" is suspicious if the email claims to be from Bank of America (US). Also the domain includes \"evil.ru\" which is obviously malicious.\n\n- The URL uses HTTPS but that doesn't guarantee legitimacy.\n\nEmail headers:\n\n- Return-Path: <bounce@mass-mailer.xyz> - This indicates that bounce messages are sent from a different domain \"mass-mailer.xyz\". Usually legitimate corporate emails would have Return-Path matching the From domain. This mismatch is suspicious.\n\n- X-Originating-IP: 185.220.101.42 - This IP is likely from a hosting provider; not typical for legitimate corporate email servers. Could be a sign of a compromised server or a spam source.\n\n- List-Unsubscribe: <mailto:unsub@mass-mailer.xyz> - This is a typical header for legitimate bulk email to provide unsubscribe, but the domain \"mass-mailer.xyz\" again is suspicious. Also the presence of a List-Unsubscribe header is often used by legitimate senders, but combined with other indicators, it's suspicious.\n\nThus overall high confidence of phishing.\n\nWe need to assign a confidence score. Probably 0.95 or 0.9 or 0.97. Provide numeric maybe as integer? The prompt says \"confidence_score\": <score>. Could"
+      },
+      {
+        "env": "network",
+        "prompt_preview": "Analyze these firewall logs for potential intrusion attempts:\n```\n2024-01-15 03:...",
+        "input_tokens": 323,
+        "output_tokens": 512,
+        "text": " What mitigation steps would you take?\n\n---\n\n## \ud83d\udd0d 2. **Log Analysis Questions**\n### **Question 4: Log Analysis**\nYou find this entry in a web server log:\n```\n192.168.1.100 - - [10/Oct/2023:13:55:36 +0000] \"GET /admin.php HTTP/1.1\" 200 512 \"-\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64)\"\n```\n- What\u2019s suspicious about this request?\n- Why might this be a security concern?\n- How would you investigate further?\n\n---\n\n### **Question 5: Log Analysis**\nGiven this authentication log snippet:\n```\nOct 10 12:01:22 server sshd[1234]: Accepted publickey for alice from 192.168.1.50 port 54321 ssh2: RSA SHA256:abc123\nOct 10 12:02:10 server sshd[1235]: Failed password for invalid user bob from 203.0.113.89 port 45678 ssh2\nOct 10 12:03:01 server sshd[1236]: input_userauth_request: invalid user charlie [198.51.100.20] port 56789\n```\n- Identify at least two red flags.\n- What attack might this indicate?\n- How would you respond?\n\n---\n\n## \ud83d\udee1\ufe0f 3. **Threat Modeling & Defense**\n### **Question 6: Threat Modeling**\nYou're designing a web application that allows file uploads. What are the top 3 security risks associated with this feature?\n- How would you mitigate each?\n- What logs would you monitor to detect abuse?\n\n---\n\n### **Question 7: Defense in Depth**\nA server is compromised despite having a firewall, updated software, and antivirus. Which log types would help you determine:\n- How the breach occurred?\n- What systems were accessed?\n- Whether data was exfiltrated?\nList and explain **three critical logs** you\u2019d collect.\n\n---\n\n## \ud83e\udde0 4. **Critical Thinking & Incident Response**\n"
+      },
+      {
+        "env": "network",
+        "prompt_preview": "Examine these DNS query logs and identify any data exfiltration attempts:\n```\n20...",
+        "input_tokens": 147,
+        "output_tokens": 1,
+        "text": ""
+      }
+    ]
+  }
+}

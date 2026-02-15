@@ -1,0 +1,12 @@
+[build]
+builder = "nixpacks"
+
+[build.nixpacks]
+installCmd = "curl -LsSf https://astral.sh/uv/install.sh | sh && . $HOME/.local/bin/env && uv sync --no-dev --frozen"
+
+[deploy]
+startCommand = "uv run uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"
+healthcheckPath = "/health"
+healthcheckTimeout = 100
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 5

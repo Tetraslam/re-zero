@@ -7,6 +7,7 @@ export default defineSchema({
     email: v.string(),
     name: v.string(),
     imageUrl: v.optional(v.string()),
+    theme: v.optional(v.union(v.literal("light"), v.literal("dark"))),
   }).index("by_clerk_id", ["clerkId"]),
 
   projects: defineTable({
@@ -50,9 +51,11 @@ export default defineSchema({
     startedAt: v.number(),
     finishedAt: v.optional(v.number()),
     error: v.optional(v.string()),
+    shareToken: v.optional(v.string()),
   })
     .index("by_project", ["projectId"])
-    .index("by_status", ["status"]),
+    .index("by_status", ["status"])
+    .index("by_share_token", ["shareToken"]),
 
   actions: defineTable({
     scanId: v.id("scans"),
@@ -61,7 +64,8 @@ export default defineSchema({
       v.literal("tool_result"),
       v.literal("reasoning"),
       v.literal("observation"),
-      v.literal("report")
+      v.literal("report"),
+      v.literal("human_input_request")
     ),
     payload: v.any(),
     timestamp: v.number(),
@@ -72,6 +76,7 @@ export default defineSchema({
     projectId: v.id("projects"),
     findings: v.array(
       v.object({
+        id: v.optional(v.string()),
         title: v.string(),
         severity: v.union(
           v.literal("critical"),
@@ -83,6 +88,7 @@ export default defineSchema({
         description: v.string(),
         location: v.optional(v.string()),
         recommendation: v.optional(v.string()),
+        codeSnippet: v.optional(v.string()),
       })
     ),
     summary: v.optional(v.string()),
@@ -91,6 +97,18 @@ export default defineSchema({
   })
     .index("by_scan", ["scanId"])
     .index("by_project", ["projectId"]),
+
+  prompts: defineTable({
+    scanId: v.id("scans"),
+    question: v.string(),
+    response: v.optional(v.string()),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("answered"),
+    ),
+    createdAt: v.number(),
+    answeredAt: v.optional(v.number()),
+  }).index("by_scan", ["scanId"]),
 
   gateways: defineTable({
     projectId: v.id("projects"),

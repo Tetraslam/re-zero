@@ -10,8 +10,10 @@
 
 import type * as actions from "../actions.js";
 import type * as projects from "../projects.js";
+import type * as prompts from "../prompts.js";
 import type * as reports from "../reports.js";
 import type * as scans from "../scans.js";
+import type * as storage from "../storage.js";
 import type * as users from "../users.js";
 
 import type {
@@ -23,8 +25,10 @@ import type {
 declare const fullApi: ApiFromModules<{
   actions: typeof actions;
   projects: typeof projects;
+  prompts: typeof prompts;
   reports: typeof reports;
   scans: typeof scans;
+  storage: typeof storage;
   users: typeof users;
 }>;
 

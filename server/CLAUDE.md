@@ -23,13 +23,32 @@ server/
 │   │   ├── scans.py     # POST /scans/start, /scans/action, /scans/report
 │   │   └── gateways.py  # POST /gateways/heartbeat
 │   └── sandbox/
-│       └── (orchestrator, agent harnesses — TODO)
+│       └── orchestrator.py  # Modal functions: run_oss_scan, run_web_scan
 ```
+
+## Scan modes
+
+### OSS (source code)
+- Modal function: `run_oss_scan`
+- Image: `sandbox_image` (debian + git + httpx/anthropic)
+- Flow: clone repo → Claude agent reads/searches files → submit findings
+- Tools: `read_file`, `search_code`, `submit_findings` + Firecrawl MCP
+
+### Web (pentesting)
+- Modal function: `run_web_scan`
+- Image: `web_sandbox_image` (debian + Playwright/Chromium + Stagehand)
+- Flow: launch headless Chrome → Claude agent browses/tests target → submit findings
+- Tools: `navigate`, `observe`, `act`, `extract`, `execute_js`, `screenshot`, `submit_findings` + Firecrawl MCP
+- Browser: Stagehand (env=LOCAL) → Playwright → headless Chromium (all in Modal container, no external browser service)
+- Screenshots: uploaded to Convex file storage via `storage:generateUploadUrl` mutation, storageId stored in action payload
+- Auth: if test account provided, scans both unauthenticated and authenticated surfaces
+- Active testing: injects XSS/SQLi payloads, tests auth bypass, checks headers, CORS, cookies
 
 ## Key patterns
 - **Stateless**: Server stores nothing locally. All state → Convex via `convex_client.py`.
-- **Agent callbacks**: Agents in Modal sandboxes call POST /scans/action to report per-action updates. Server writes to Convex. Frontend subscribes via Convex reactivity.
-- **Report submission**: Agents call POST /scans/report with structured findings JSON. Server writes to Convex and marks scan as completed.
+- **Agent callbacks**: Agents in Modal sandboxes write directly to Convex (not back to server). Frontend subscribes via Convex reactivity.
+- **Report submission**: Agents call `_submit_report()` which writes to Convex and marks scan completed.
+- **MCP**: Firecrawl MCP server available to agents via Anthropic's MCP connector beta (`betas=["mcp-client-2025-11-20"]`).
 
 ## Convex integration
 - Uses HTTP API (not the Convex Python SDK's real-time client) for simplicity
