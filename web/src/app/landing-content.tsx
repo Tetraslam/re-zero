@@ -54,10 +54,10 @@ function OssVisual() {
               ? "text-[#dc4242]/80 bg-[#dc4242]/8 -mx-3 sm:-mx-4 px-3 sm:px-4"
               : l.hl === "high"
                 ? "text-[#e8a84f]/80 bg-[#e8a84f]/8 -mx-3 sm:-mx-4 px-3 sm:px-4"
-                : "text-[#cfd2e3]/40"
+                : "text-[#cfd2e3]/65"
           }
         >
-          <span className="text-[#cfd2e3]/20 inline-block w-4 text-right mr-4 select-none">
+          <span className="text-[#cfd2e3]/40 inline-block w-4 text-right mr-4 select-none">
             {l.n}
           </span>
           {l.code}
@@ -74,7 +74,7 @@ function WebVisual() {
       <line x1="0" y1="24" x2="260" y2="24" stroke="#6b82ff" strokeWidth="0.5" opacity="0.3" />
       <rect x="6" y="4" width="70" height="16" stroke="#6b82ff" strokeWidth="0.5" opacity="0.2" />
       <rect x="6" y="28" width="248" height="14" stroke="#6b82ff" strokeWidth="0.5" opacity="0.2" />
-      <text x="12" y="38" fill="#6b82ff" fontSize="7" fontFamily="monospace" opacity="0.4">
+      <text x="12" y="38" fill="#6b82ff" fontSize="7" fontFamily="monospace" opacity="0.6">
         https://target.com/login
       </text>
       <rect x="12" y="52" width="90" height="7" fill="#6b82ff" opacity="0.12" />
@@ -86,13 +86,13 @@ function WebVisual() {
       <rect x="20" y="96" width="144" height="12" stroke="#6b82ff" strokeWidth="0.5" opacity="0.2" />
       <rect x="20" y="114" width="144" height="12" stroke="#6b82ff" strokeWidth="0.5" opacity="0.2" />
       <rect x="20" y="134" width="70" height="16" fill="#6b82ff" opacity="0.15" />
-      <text x="180" y="105" fill="#dc4242" fontSize="6.5" fontFamily="monospace" opacity="0.6">
+      <text x="180" y="105" fill="#dc4242" fontSize="6.5" fontFamily="monospace" opacity="0.8">
         {"<script>"}
       </text>
-      <text x="180" y="120" fill="#e8a84f" fontSize="6.5" fontFamily="monospace" opacity="0.6">
+      <text x="180" y="120" fill="#e8a84f" fontSize="6.5" fontFamily="monospace" opacity="0.8">
         CSRF token
       </text>
-      <text x="180" y="135" fill="#dc4242" fontSize="6.5" fontFamily="monospace" opacity="0.6">
+      <text x="180" y="135" fill="#dc4242" fontSize="6.5" fontFamily="monospace" opacity="0.8">
         SSRF probe
       </text>
       <line x1="82" y1="110" x2="112" y2="110" stroke="#dc4242" strokeWidth="0.8" opacity="0.4" />
@@ -108,19 +108,19 @@ function WebVisual() {
 function DroneVisual() {
   return (
     <svg viewBox="0 0 200 200" fill="none" className="w-full max-w-[200px] sm:max-w-[240px] mx-auto">
-      <line x1="34" y1="34" x2="84" y2="84" stroke="#6b82ff" strokeWidth="1.5" opacity="0.45" />
-      <line x1="166" y1="34" x2="116" y2="84" stroke="#6b82ff" strokeWidth="1.5" opacity="0.45" />
-      <line x1="34" y1="166" x2="84" y2="116" stroke="#6b82ff" strokeWidth="1.5" opacity="0.45" />
-      <line x1="166" y1="166" x2="116" y2="116" stroke="#6b82ff" strokeWidth="1.5" opacity="0.45" />
-      <rect x="82" y="82" width="36" height="36" stroke="#6b82ff" strokeWidth="1.5" fill="none" opacity="0.55" />
-      <circle cx="34" cy="34" r="22" stroke="#6b82ff" strokeWidth="1" opacity="0.35" />
-      <circle cx="166" cy="34" r="22" stroke="#6b82ff" strokeWidth="1" opacity="0.35" />
-      <circle cx="34" cy="166" r="22" stroke="#6b82ff" strokeWidth="1" opacity="0.35" />
-      <circle cx="166" cy="166" r="22" stroke="#6b82ff" strokeWidth="1" opacity="0.35" />
-      <circle cx="34" cy="34" r="2.5" fill="#6b82ff" opacity="0.6" />
-      <circle cx="166" cy="34" r="2.5" fill="#6b82ff" opacity="0.6" />
-      <circle cx="34" cy="166" r="2.5" fill="#6b82ff" opacity="0.6" />
-      <circle cx="166" cy="166" r="2.5" fill="#6b82ff" opacity="0.6" />
+      <line x1="34" y1="34" x2="84" y2="84" stroke="#6b82ff" strokeWidth="1.5" opacity="0.6" />
+      <line x1="166" y1="34" x2="116" y2="84" stroke="#6b82ff" strokeWidth="1.5" opacity="0.6" />
+      <line x1="34" y1="166" x2="84" y2="116" stroke="#6b82ff" strokeWidth="1.5" opacity="0.6" />
+      <line x1="166" y1="166" x2="116" y2="116" stroke="#6b82ff" strokeWidth="1.5" opacity="0.6" />
+      <rect x="82" y="82" width="36" height="36" stroke="#6b82ff" strokeWidth="1.5" fill="none" opacity="0.7" />
+      <circle cx="34" cy="34" r="22" stroke="#6b82ff" strokeWidth="1" opacity="0.5" />
+      <circle cx="166" cy="34" r="22" stroke="#6b82ff" strokeWidth="1" opacity="0.5" />
+      <circle cx="34" cy="166" r="22" stroke="#6b82ff" strokeWidth="1" opacity="0.5" />
+      <circle cx="166" cy="166" r="22" stroke="#6b82ff" strokeWidth="1" opacity="0.5" />
+      <circle cx="34" cy="34" r="2.5" fill="#6b82ff" opacity="0.8" />
+      <circle cx="166" cy="34" r="2.5" fill="#6b82ff" opacity="0.8" />
+      <circle cx="34" cy="166" r="2.5" fill="#6b82ff" opacity="0.8" />
+      <circle cx="166" cy="166" r="2.5" fill="#6b82ff" opacity="0.8" />
       <circle cx="100" cy="100" r="40" stroke="#6b82ff" strokeWidth="0.8" opacity="0">
         <animate attributeName="r" from="40" to="96" dur="3s" repeatCount="indefinite" />
         <animate attributeName="opacity" from="0.3" to="0" dur="3s" repeatCount="indefinite" />
@@ -133,7 +133,7 @@ function DroneVisual() {
         <animate attributeName="r" from="40" to="96" dur="3s" begin="2s" repeatCount="indefinite" />
         <animate attributeName="opacity" from="0.3" to="0" dur="3s" begin="2s" repeatCount="indefinite" />
       </circle>
-      <text x="100" y="196" fill="#cfd2e3" fontSize="7" fontFamily="monospace" textAnchor="middle" opacity="0.3">
+      <text x="100" y="196" fill="#cfd2e3" fontSize="7" fontFamily="monospace" textAnchor="middle" opacity="0.55">
         MAVLink v2
       </text>
     </svg>
@@ -162,8 +162,8 @@ function FpgaVisual() {
         <animate attributeName="x1" from="0" to="400" dur="4s" repeatCount="indefinite" />
         <animate attributeName="x2" from="0" to="400" dur="4s" repeatCount="indefinite" />
       </line>
-      <text x="0" y="126" fill="#cfd2e3" fontSize="6" fontFamily="monospace" opacity="0.25">power (mW)</text>
-      <text x="375" y="126" fill="#cfd2e3" fontSize="6" fontFamily="monospace" opacity="0.25">time</text>
+      <text x="0" y="126" fill="#cfd2e3" fontSize="6" fontFamily="monospace" opacity="0.5">power (mW)</text>
+      <text x="375" y="126" fill="#cfd2e3" fontSize="6" fontFamily="monospace" opacity="0.5">time</text>
     </svg>
   );
 }
@@ -416,7 +416,7 @@ export function LandingContent() {
                 deploy Rem
               </button>
             </SignInButton>
-            <span className="text-xs text-muted-foreground/50">
+            <span className="text-xs text-muted-foreground">
               autonomous security analysis in minutes
             </span>
           </div>
@@ -455,48 +455,61 @@ export function LandingContent() {
           data-section="terminal"
           className="relative z-10 max-w-4xl mx-auto px-6 sm:px-8 pt-16 sm:pt-24 pb-16"
         >
-          <div className="flex items-center gap-2.5 mb-8 sm:mb-10">
-            <div className="w-[7px] h-[7px] rounded-full bg-[#c53528]/60" />
-            <div className="w-[7px] h-[7px] rounded-full bg-[#c5a028]/60" />
-            <div className="w-[7px] h-[7px] rounded-full bg-[#28c55a]/60" />
-            <span className="text-[11px] text-[#cfd2e3]/35 ml-3 font-mono">
-              rem &mdash; live scan
-            </span>
-          </div>
+          <div className="border border-[#222645] bg-[#080a14]">
+            {/* Title bar */}
+            <div className="flex items-center gap-2.5 px-4 py-2.5 border-b border-[#222645]">
+              <div className="w-[7px] h-[7px] rounded-full bg-[#c53528]/60" />
+              <div className="w-[7px] h-[7px] rounded-full bg-[#c5a028]/60" />
+              <div className="w-[7px] h-[7px] rounded-full bg-[#28c55a]/60" />
+              <span className="text-[11px] text-[#cfd2e3]/60 ml-2 font-mono">
+                rem &mdash; live scan
+              </span>
+              <span className="ml-auto text-[10px] text-[#6b82ff]/40 font-mono">
+                pid 4801
+              </span>
+            </div>
 
-          <div className="font-mono text-[12px] sm:text-[13px] leading-[1.9] overflow-x-auto">
-            {SCAN_LINES.map((line, i) => (
-              <div
-                key={i}
-                className={`scan-line opacity-0 whitespace-pre ${
-                  line.type === "blank"
-                    ? "h-3"
-                    : line.type === "cmd"
-                      ? "text-white"
-                      : line.type === "sys"
-                        ? "text-[#cfd2e3]/45"
-                        : line.type === "reason"
-                          ? "text-[#6b82ff]/80"
-                          : line.type === "tool"
-                            ? "text-[#cfd2e3]/40"
-                            : line.type === "finding-critical"
-                              ? "text-[#dc4242]"
-                              : line.type === "finding-high"
-                                ? "text-[#e8a84f]"
-                                : "text-[#cfd2e3]/30"
-                }`}
-              >
-                {line.text}
-              </div>
-            ))}
-            <span className="term-cursor opacity-0 inline-block w-[7px] h-[14px] bg-[#6b82ff] animate-pulse mt-1" />
+            {/* Content */}
+            <div className="px-4 sm:px-5 py-4 sm:py-5 font-mono text-[12px] sm:text-[13px] leading-[1.9] overflow-x-auto">
+              {SCAN_LINES.map((line, i) => (
+                <div
+                  key={i}
+                  className={`scan-line opacity-0 whitespace-pre ${
+                    line.type === "blank"
+                      ? "h-3"
+                      : line.type === "cmd"
+                        ? "text-white"
+                        : line.type === "sys"
+                          ? "text-[#cfd2e3]/70"
+                          : line.type === "reason"
+                            ? "text-[#6b82ff]"
+                            : line.type === "tool"
+                              ? "text-[#cfd2e3]/60"
+                              : line.type === "finding-critical"
+                                ? "text-[#dc4242]"
+                                : line.type === "finding-high"
+                                  ? "text-[#e8a84f]"
+                                  : "text-[#cfd2e3]/50"
+                  }`}
+                >
+                  {line.text}
+                </div>
+              ))}
+              <span className="term-cursor opacity-0 inline-block w-[7px] h-[14px] bg-[#6b82ff] animate-pulse mt-1" />
+            </div>
+
+            {/* Status bar */}
+            <div className="flex items-center justify-between px-4 py-2 border-t border-[#222645] text-[10px] font-mono">
+              <span className="text-[#cfd2e3]/40">zsh &middot; 192.168.1.4</span>
+              <span className="text-[#6b82ff]/50">3 findings &middot; 2 critical &middot; 1 high</span>
+            </div>
           </div>
         </section>
 
         {/* ── Attack modes ─────────────────────────── */}
         <section className="relative z-10 border-t border-[#222645] px-6 sm:px-8 pb-16 sm:pb-24 pt-16 sm:pt-20">
           <div className="max-w-6xl mx-auto">
-            <span className="text-[11px] text-[#cfd2e3]/35 font-mono tracking-widest uppercase">
+            <span className="text-[11px] text-[#cfd2e3]/60 font-mono tracking-widest uppercase">
               Attack modes
             </span>
 
@@ -517,10 +530,10 @@ export function LandingContent() {
                       $ rem --mode{" "}
                       <span className="text-[#6b82ff]">{m.cmd}</span>
                     </h3>
-                    <p className="text-[12px] sm:text-[13px] text-[#cfd2e3]/50 mt-2 italic">
+                    <p className="text-[12px] sm:text-[13px] text-[#cfd2e3]/75 mt-2 italic">
                       {m.tagline}
                     </p>
-                    <p className="text-[13px] text-[#cfd2e3]/60 mt-5 leading-relaxed max-w-md">
+                    <p className="text-[13px] text-[#cfd2e3]/80 mt-5 leading-relaxed max-w-md">
                       {m.desc}
                     </p>
                   </div>
@@ -572,7 +585,7 @@ export function LandingContent() {
             </button>
           </SignInButton>
 
-          <p className="text-sm text-muted-foreground/70 text-center max-w-xs leading-relaxed mt-4">
+          <p className="text-sm text-muted-foreground text-center max-w-xs leading-relaxed mt-4">
             Rem probes, fails, learns, returns.
             <br />
             Each scan is a life. Knowledge accumulates.
