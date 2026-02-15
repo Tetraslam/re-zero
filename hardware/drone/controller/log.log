@@ -1,0 +1,96 @@
+[UDP] bound ('0.0.0.0', 6000)
+[STATUS] not connected (udp=False tcp7060=False tcp8060=False)
+[TCP 7060] not connected (ConnectionRefusedError: [Errno 111] Connect call failed ('192.168.0.1', 7060))
+[TCP 8060] not connected (ConnectionRefusedError: [Errno 111] Connect call failed ('192.168.0.1', 8060))
+[VID] frame saved data/video/frame_1771147212392_000001.jpg bytes=41933
+[VID] frame saved data/video/frame_1771147212462_000002.jpg bytes=41401
+[STATUS] connected (udp=True tcp7060=False tcp8060=False)
+[VID] frame saved data/video/frame_1771147212596_000003.jpg bytes=41033
+[VID] frame saved data/video/frame_1771147212801_000004.jpg bytes=42009
+[VID] frame saved data/video/frame_1771147212852_000005.jpg bytes=41481
+[VID] frame saved data/video/frame_1771147213089_000006.jpg bytes=41537
+[VID] frame saved data/video/frame_1771147213120_000007.jpg bytes=41445
+[VID] frame saved data/video/frame_1771147213293_000008.jpg bytes=41353
+[TEL] udp src=40000 len=106 hex=6363010b006300524144434c4f4650565f3833393831390000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000003100000001000000010003000000000000000000000000000000000000
+[VID] frame saved data/video/frame_1771147213491_000009.jpg bytes=41645
+[TCP 7060] not connected (ConnectionRefusedError: [Errno 111] Connect call failed ('192.168.0.1', 7060))
+[TCP 8060] not connected (ConnectionRefusedError: [Errno 111] Connect call failed ('192.168.0.1', 8060))
+[VID] frame saved data/video/frame_1771147213737_000010.jpg bytes=41449
+[VID] frame saved data/video/frame_1771147214060_000011.jpg bytes=41321
+[VID] frame saved data/video/frame_1771147214146_000012.jpg bytes=41157
+[VID] frame saved data/video/frame_1771147214209_000013.jpg bytes=41129
+[VID] frame saved data/video/frame_1771147214277_000014.jpg bytes=41213
+[VID] frame saved data/video/frame_1771147214339_000015.jpg bytes=41157
+[TEL] udp src=40000 len=106 hex=6363010c006300524144434c4f4650565f3833393831390000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000003100000001000000010003000000000000000000000000000000000000
+[VID] frame saved data/video/frame_1771147214399_000016.jpg bytes=41477
+[VID] frame saved data/video/frame_1771147214472_000017.jpg bytes=41357
+[TCP 7060] not connected (ConnectionRefusedError: [Errno 111] Connect call failed ('192.168.0.1', 7060))
+[TCP 8060] not connected (ConnectionRefusedError: [Errno 111] Connect call failed ('192.168.0.1', 8060))
+[VID] frame saved data/video/frame_1771147214851_000018.jpg bytes=41085
+[VID] frame saved data/video/frame_1771147214878_000019.jpg bytes=41021
+[VID] frame saved data/video/frame_1771147214917_000020.jpg bytes=41041
+[VID] frame saved data/video/frame_1771147214986_000021.jpg bytes=41329
+[VID] frame saved data/video/frame_1771147215048_000022.jpg bytes=41337
+[VID] frame saved data/video/frame_1771147215116_000023.jpg bytes=41177
+[VID] frame saved data/video/frame_1771147215181_000024.jpg bytes=41045
+[VID] frame saved data/video/frame_1771147215242_000025.jpg bytes=41013
+[VID] frame saved data/video/frame_1771147215308_000026.jpg bytes=41025
+[TEL] udp src=40000 len=106 hex=6363010d006300524144434c4f4650565f3833393831390000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000003100000001000000010003000000000000000000000000000000000000
+[VID] frame saved data/video/frame_1771147215874_000027.jpg bytes=41245
+[VID] frame saved data/video/frame_1771147215908_000028.jpg bytes=41229
+[TCP 7060] not connected (ConnectionRefusedError: [Errno 111] Connect call failed ('192.168.0.1', 7060))
+[VID] frame saved data/video/frame_1771147216035_000029.jpg bytes=41249
+[VID] frame saved data/video/frame_1771147216056_000030.jpg bytes=41385
+[VID] frame saved data/video/frame_1771147216112_000031.jpg bytes=41625
+[VID] frame saved data/video/frame_1771147216158_000032.jpg bytes=41213
+[VID] frame saved data/video/frame_1771147216186_000033.jpg bytes=41213
+[VID] frame saved data/video/frame_1771147216254_000034.jpg bytes=41233
+[TEL] udp src=40000 len=106 hex=6363010e006300524144434c4f4650565f3833393831390000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000003100000001000000010003000000000000000000000000000000000000
+[VID] frame saved data/video/frame_1771147216878_000035.jpg bytes=41129
+[VID] frame saved data/video/frame_1771147216903_000036.jpg bytes=3577
+[TCP 8060] not connected (ConnectionRefusedError: [Errno 111] Connect call failed ('192.168.0.1', 8060))
+[TCP 7060] not connected (ConnectionRefusedError: [Errno 111] Connect call failed ('192.168.0.1', 7060))
+[VID] frame saved data/video/frame_1771147216991_000037.jpg bytes=41393
+[VID] frame saved data/video/frame_1771147217082_000038.jpg bytes=41553
+[VID] frame saved data/video/frame_1771147217139_000039.jpg bytes=41485
+[VID] frame saved data/video/frame_1771147217184_000040.jpg bytes=41281
+[VID] frame saved data/video/frame_1771147217224_000041.jpg bytes=41253
+[VID] frame saved data/video/frame_1771147217285_000042.jpg bytes=41197
+[VID] frame saved data/video/frame_1771147217351_000043.jpg bytes=41377
+[TEL] udp src=40000 len=106 hex=6363010f006300524144434c4f4650565f3833393831390000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000003100000001000000010003000000000000000000000000000000000000
+[VID] frame saved data/video/frame_1771147217418_000044.jpg bytes=41485
+[VID] frame saved data/video/frame_1771147217477_000045.jpg bytes=41461
+[VID] frame saved data/video/frame_1771147217543_000046.jpg bytes=41029
+[VID] frame saved data/video/frame_1771147217608_000047.jpg bytes=41169
+[VID] frame saved data/video/frame_1771147217684_000048.jpg bytes=41293
+[VID] frame saved data/video/frame_1771147217744_000049.jpg bytes=41141
+[VID] frame saved data/video/frame_1771147217807_000050.jpg bytes=41037
+[VID] frame saved data/video/frame_1771147217869_000051.jpg bytes=40757
+[TCP 8060] not connected (ConnectionRefusedError: [Errno 111] Connect call failed ('192.168.0.1', 8060))
+[TCP 7060] not connected (ConnectionRefusedError: [Errno 111] Connect call failed ('192.168.0.1', 7060))
+[VID] frame saved data/video/frame_1771147217934_000052.jpg bytes=40773
+[VID] frame saved data/video/frame_1771147218119_000053.jpg bytes=41213
+[VID] frame saved data/video/frame_1771147218199_000054.jpg bytes=41077
+[VID] frame saved data/video/frame_1771147218252_000055.jpg bytes=41049
+[VID] frame saved data/video/frame_1771147218315_000056.jpg bytes=41113
+[TEL] udp src=40000 len=106 hex=63630110006300524144434c4f4650565f3833393831390000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000003100000001000000010003000000000000000000000000000000000000
+[VID] frame saved data/video/frame_1771147218976_000057.jpg bytes=41125
+[TCP 8060] not connected (ConnectionRefusedError: [Errno 111] Connect call failed ('192.168.0.1', 8060))
+[TCP 7060] not connected (ConnectionRefusedError: [Errno 111] Connect call failed ('192.168.0.1', 7060))
+[VID] frame saved data/video/frame_1771147219028_000058.jpg bytes=41425
+[VID] frame saved data/video/frame_1771147219149_000059.jpg bytes=41389
+[VID] frame saved data/video/frame_1771147219174_000060.jpg bytes=41181
+[VID] frame saved data/video/frame_1771147219220_000061.jpg bytes=41105
+[VID] frame saved data/video/frame_1771147219293_000062.jpg bytes=41117
+[VID] frame saved data/video/frame_1771147219351_000063.jpg bytes=41045
+[TEL] udp src=40000 len=106 hex=63630111006300524144434c4f4650565f3833393831390000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000003100000001000000010003000000000000000000000000000000000000
+[VID] frame saved data/video/frame_1771147219417_000064.jpg bytes=41445
+[VID] frame saved data/video/frame_1771147219484_000065.jpg bytes=41561
+[TCP 8060] not connected (ConnectionRefusedError: [Errno 111] Connect call failed ('192.168.0.1', 8060))
+[TCP 7060] not connected (ConnectionRefusedError: [Errno 111] Connect call failed ('192.168.0.1', 7060))
+[VID] frame saved data/video/frame_1771147220022_000066.jpg bytes=41333
+[VID] frame saved data/video/frame_1771147220068_000067.jpg bytes=41393
+[VID] frame saved data/video/frame_1771147220152_000068.jpg bytes=41433
+[VID] frame saved data/video/frame_1771147220199_000069.jpg bytes=41157
+[VID] frame saved data/video/frame_1771147220265_000070.jpg bytes=41149
+[VID] frame saved data/video/frame_1771147220324_000071.jpg bytes=41037

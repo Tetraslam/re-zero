@@ -18,6 +18,53 @@ from .serial_frame import Decoder, Frame, SfType
 def _now() -> float:
     return time.time()
 
+
+def _cc_opcode_u16le(payload: bytes) -> Optional[int]:
+    # For most observed UDP control-plane messages, payload starts with b"cc".
+    if len(payload) < 4:
+        return None
+    if payload[0] != 0x63 or payload[1] != 0x63:
+        return None
+    return int.from_bytes(payload[2:4], "little", signed=False)
+
+
+def _cc_detail(payload: bytes) -> str:
+    """
+    Best-effort decode for the known 'cc' message types.
+    Returns a short printable suffix (leading space included) or "".
+    """
+    op = _cc_opcode_u16le(payload)
+    if op is None:
+        return ""
+
+    # 15-byte control report (opcode 0x000a).
+    if op == 0x000A and len(payload) >= 15:
+        x, y, z, w = payload[8], payload[9], payload[10], payload[11]
+        flags = payload[12]
+        csum = payload[13]
+        csum_calc = x ^ y ^ z ^ w ^ flags
+        term = payload[14]
+        ok = (csum == csum_calc) and (term == 0x99)
+        # Also show deltas around neutral center (0x80) to make patterns obvious.
+        dx, dy, dz, dw = x - 0x80, y - 0x80, z - 0x80, w - 0x80
+        return (
+            f" axes={x:02x},{y:02x},{z:02x},{w:02x}"
+            f" d={dx:+d},{dy:+d},{dz:+d},{dw:+d}"
+            f" flags=0x{flags:02x} csum_ok={1 if ok else 0}"
+        )
+
+    # 7-byte heartbeat (opcode 0x0001).
+    if op == 0x0001 and len(payload) == 7:
+        return ""
+
+    # Other short 'cc' messages (often len=7, opcode varies).
+    if len(payload) == 7:
+        # payload[2]=type-like value, payload[3]=sequence-ish in captures for type 0x05 bursts.
+        return f" b2=0x{payload[2]:02x} b3=0x{payload[3]:02x}"
+
+    return ""
+
+
 def _hex_head(b: bytes, n: int = 32) -> str:
     if not b:
         return ""
@@ -266,12 +313,29 @@ class ProtoLogger:
                 out["cc_type_u8"] = payload[2]
             if len(payload) >= 4:
                 out["cc_b3_u8"] = payload[3]
+                out["cc_seq_u8"] = payload[3]  # for telemetry/status messages this is a sequence counter
             if len(payload) >= 5:
                 out["cc_u16le_3"] = self._u16le(payload[3:5])
             if len(payload) >= 7:
                 out["cc_u16le_5"] = self._u16le(payload[5:7])
             if len(payload) >= 7:
                 out["cc_u32le_3"] = self._u32le(payload[3:7])
+            # 15-byte control report (opcode 0x000a).
+            op = self._u16le(payload[2:4]) if len(payload) >= 4 else None
+            if op == 0x000A and len(payload) >= 15:
+                x, y, z, w = payload[8], payload[9], payload[10], payload[11]
+                flags = payload[12]
+                csum = payload[13]
+                term = payload[14]
+                out["cc_x_u8"] = x
+                out["cc_y_u8"] = y
+                out["cc_z_u8"] = z
+                out["cc_w_u8"] = w
+                out["cc_flags_u8"] = flags
+                out["cc_csum_u8"] = csum
+                out["cc_term_u8"] = term
+                out["cc_csum_calc_u8"] = x ^ y ^ z ^ w ^ flags
+                out["cc_csum_ok"] = bool((out["cc_csum_calc_u8"] == csum) and (term == 0x99))
         return out
 
     def _parse_tcp_lewei(self, payload: bytes) -> dict:
@@ -425,6 +489,20 @@ def pump(name: str, src: serial.Serial, dst: serial.Serial, log, proto: Optional
     except Exception:
         pass
 
+    t0 = None
+    cc_detail = False
+    tel_bytes = 24
+    tel_min_interval_s = 1.0
+    stats_interval_s = 0.0
+    try:
+        t0 = getattr(log, "_t0", None)  # type: ignore[attr-defined]
+        cc_detail = bool(getattr(log, "_cc_detail", False))  # type: ignore[attr-defined]
+        tel_bytes = int(getattr(log, "_tel_bytes", 24))  # type: ignore[attr-defined]
+        tel_min_interval_s = float(getattr(log, "_tel_min_interval_s", 1.0))  # type: ignore[attr-defined]
+        stats_interval_s = float(getattr(log, "_stats_interval_s", 0.0))  # type: ignore[attr-defined]
+    except Exception:
+        pass
+
     # Rate-limited live prints for command RE (stdout should not become the log).
     # Commands are fully captured in proto_*.jsonl; stdout is a concise view.
     cmd_last_by_key: Dict[Tuple[int, int], bytes] = {}
@@ -438,7 +516,45 @@ def pump(name: str, src: serial.Serial, dst: serial.Serial, log, proto: Optional
         cmd_print_static = False
 
     tel_last_print_s = 0.0
-    tel_min_interval_s = 1.0  # show at most ~1 drone->phone packet per second
+
+    # Periodic stats (per pump direction).
+    stats_t0 = _now()
+    stats_last = stats_t0
+    cmd_counts: Dict[Tuple[int, int, Optional[int], int], int] = {}  # (dst_port, src_port, op, len) -> count
+    tel_counts: Dict[Tuple[int, int, int], int] = {}  # (src_port, dst_port, len) -> count
+
+    def _t_rel() -> str:
+        if not t0:
+            return ""
+        try:
+            return f" t={_now() - float(t0):.3f}"
+        except Exception:
+            return ""
+
+    def _stats_tick() -> None:
+        nonlocal stats_last, cmd_counts, tel_counts
+        if stats_interval_s <= 0:
+            return
+        now = _now()
+        if now - stats_last < stats_interval_s:
+            return
+        dt = now - stats_last
+        stats_last = now
+        if name == "AP->STA" and cmd_counts:
+            parts = []
+            for (dst_port, src_port, op, ln), n in sorted(cmd_counts.items()):
+                op_s = f" op=0x{op:04x}" if op is not None else ""
+                hz = n / dt if dt > 0 else 0.0
+                parts.append(f"dst={dst_port} src={src_port} len={ln}{op_s} {hz:.1f}Hz")
+            print(f"[STATS {name}] dt={dt:.2f}s " + " | ".join(parts), flush=True)
+            cmd_counts = {}
+        if name == "STA->AP" and tel_counts:
+            parts = []
+            for (src_port, dst_port, ln), n in sorted(tel_counts.items()):
+                hz = n / dt if dt > 0 else 0.0
+                parts.append(f"src={src_port} dst={dst_port} len={ln} {hz:.1f}Hz")
+            print(f"[STATS {name}] dt={dt:.2f}s " + " | ".join(parts), flush=True)
+            tel_counts = {}
 
     while not stop_evt.is_set():
         try:
@@ -505,27 +621,28 @@ def pump(name: str, src: serial.Serial, dst: serial.Serial, log, proto: Optional
                     key = (fr.conn, fr.port)
                     prev = cmd_last_by_key.get(key)
 
+                    op = _cc_opcode_u16le(p)
+                    if stats_interval_s > 0:
+                        k = (fr.port, fr.conn, op, len(p))
+                        cmd_counts[k] = cmd_counts.get(k, 0) + 1
+
                     if prev is None:
                         cmd_last_by_key[key] = p
                         cmd_rep_by_key[key] = 1
                         cmd_last_print_by_key[key] = now
-                        op = None
-                        if len(p) >= 4 and p[0] == 0x63 and p[1] == 0x63:
-                            op = int.from_bytes(p[2:4], "little", signed=False)
                         op_s = f" op=0x{op:04x}" if op is not None else ""
-                        print(f"[CMD] udp dst={fr.port} phone_src={fr.conn} len={len(p)}{op_s} head={_hex_head(p, 24)}", flush=True)
+                        det = _cc_detail(p) if cc_detail else ""
+                        print(f"[CMD{_t_rel()}] udp dst={fr.port} phone_src={fr.conn} len={len(p)}{op_s} head={_hex_head(p, 24)}{det}", flush=True)
                     elif p == prev:
                         cmd_rep_by_key[key] = cmd_rep_by_key.get(key, 1) + 1
                         if cmd_print_static:
                             last_p = cmd_last_print_by_key.get(key, 0.0)
                             if now - last_p >= cmd_repeat_flush_s:
                                 reps = cmd_rep_by_key.get(key, 1)
-                                op = None
-                                if len(p) >= 4 and p[0] == 0x63 and p[1] == 0x63:
-                                    op = int.from_bytes(p[2:4], "little", signed=False)
                                 op_s = f" op=0x{op:04x}" if op is not None else ""
+                                det = _cc_detail(p) if cc_detail else ""
                                 print(
-                                    f"[CMD] udp dst={fr.port} phone_src={fr.conn} len={len(p)}{op_s} head={_hex_head(p, 24)} (x{reps})",
+                                    f"[CMD{_t_rel()}] udp dst={fr.port} phone_src={fr.conn} len={len(p)}{op_s} head={_hex_head(p, 24)}{det} (x{reps})",
                                     flush=True,
                                 )
                                 cmd_rep_by_key[key] = 0
@@ -534,29 +651,33 @@ def pump(name: str, src: serial.Serial, dst: serial.Serial, log, proto: Optional
                         # Payload changed: emit previous repeat count if we haven't already, then emit new payload.
                         reps = cmd_rep_by_key.get(key, 0)
                         if cmd_print_static and reps > 1:
-                            print(f"[CMD] udp dst={fr.port} phone_src={fr.conn} (previous repeated x{reps})", flush=True)
+                            print(f"[CMD{_t_rel()}] udp dst={fr.port} phone_src={fr.conn} (previous repeated x{reps})", flush=True)
                         cmd_last_by_key[key] = p
                         cmd_rep_by_key[key] = 1
                         cmd_last_print_by_key[key] = now
-                        op = None
-                        if len(p) >= 4 and p[0] == 0x63 and p[1] == 0x63:
-                            op = int.from_bytes(p[2:4], "little", signed=False)
                         op_s = f" op=0x{op:04x}" if op is not None else ""
-                        print(f"[CMD] udp dst={fr.port} phone_src={fr.conn} len={len(p)}{op_s} head={_hex_head(p, 24)}", flush=True)
+                        det = _cc_detail(p) if cc_detail else ""
+                        print(f"[CMD{_t_rel()}] udp dst={fr.port} phone_src={fr.conn} len={len(p)}{op_s} head={_hex_head(p, 24)}{det}", flush=True)
 
                 # Show a small sample of drone->phone telemetry (non-video).
                 if name == "STA->AP" and fr.port in (40000, 50000):
                     now = _now()
+                    if stats_interval_s > 0:
+                        k = (fr.port, fr.conn, len(fr.payload or b""))
+                        tel_counts[k] = tel_counts.get(k, 0) + 1
                     if now - tel_last_print_s >= tel_min_interval_s:
                         tel_last_print_s = now
                         p = fr.payload or b""
                         cc = (len(p) >= 2 and p[0] == 0x63 and p[1] == 0x63)
                         cc_type = p[2] if len(p) >= 3 else None
+                        seq = p[3] if len(p) >= 4 else None
                         cc_s = f" cc_type=0x{cc_type:02x}" if (cc and cc_type is not None) else ""
+                        seq_s = f" seq=0x{seq:02x}" if (cc and seq is not None) else ""
                         print(
-                            f"[TEL] udp src={fr.port} phone_dst={fr.conn} len={len(p)}{cc_s} head={_hex_head(p, 24)}",
+                            f"[TEL{_t_rel()}] udp src={fr.port} phone_dst={fr.conn} len={len(p)}{cc_s}{seq_s} head={_hex_head(p, tel_bytes)}",
                             flush=True,
                         )
+                _stats_tick()
                 try:
                     dst.write(raw)
                 except Exception:
@@ -601,11 +722,21 @@ def main():
     ap.add_argument("--logdir", default="logs")
     ap.add_argument("--no-print-logs", action="store_true", help="Disable printing of LOG frames to stdout.")
     ap.add_argument("--print-hello", action="store_true", help="Also print HELLO frames (usually noise/backlog).")
-    ap.add_argument("--print-cmd-static", action="store_true", help="Also print repeated/static phone->drone command packets (normally suppressed).")
-    ap.add_argument("--tap-udp", type=int, default=0, help="Print first N UDP frames per direction (for protocol debugging).")
-    ap.add_argument("--tap-tcp", type=int, default=0, help="Print first N TCP_DATA frames per direction (for protocol debugging).")
+    # Defaults tuned for RE sessions: show rates + enough detail to reproduce handshakes,
+    # without flooding the terminal with full video traffic.
+    ap.add_argument("--print-cmd-static", action="store_true", default=True, help="Also print repeated/static phone->drone command packets (normally suppressed).")
+    ap.add_argument("--no-print-cmd-static", action="store_false", dest="print_cmd_static", help="Disable printing repeat summaries for static commands.")
+    ap.add_argument("--print-cc-detail", action="store_true", default=True, help="Decode and print fields for known cc messages on stdout.")
+    ap.add_argument("--no-print-cc-detail", action="store_false", dest="print_cc_detail", help="Disable cc field decode on stdout.")
+    ap.add_argument("--print-ts", action="store_true", default=True, help="Include relative timestamps (seconds since start) in [CMD]/[TEL]/[STATS] lines.")
+    ap.add_argument("--no-print-ts", action="store_false", dest="print_ts", help="Disable relative timestamps on stdout.")
+    ap.add_argument("--tel-bytes", type=int, default=80, help="Bytes of UDP telemetry payload to show in [TEL] head hex.")
+    ap.add_argument("--tel-min-interval", type=float, default=0.5, help="Minimum seconds between [TEL] prints (0 to print all).")
+    ap.add_argument("--stats-interval", type=float, default=1.0, help="If >0, print periodic per-direction UDP rate summaries.")
+    ap.add_argument("--tap-udp", type=int, default=200, help="Print first N UDP frames per direction (for protocol debugging).")
+    ap.add_argument("--tap-tcp", type=int, default=50, help="Print first N TCP_DATA frames per direction (for protocol debugging).")
     ap.add_argument("--tap-bytes", type=int, default=48, help="Bytes of payload to include for --tap-* (hex).")
-    ap.add_argument("--tap-ports", default="40000,50000,7070,7060,8060,9060", help="Comma-separated destination ports filter for --tap-*.")
+    ap.add_argument("--tap-ports", default="40000,50000,7060,8060,9060", help="Comma-separated destination ports filter for --tap-*.")
     ap.add_argument("--no-jsonl", action="store_true", help="Disable JSONL logging to disk (lower latency).")
     ap.add_argument("--no-autofix-roles", action="store_true", help="Disable auto-swapping if --ap/--sta are swapped.")
     args = ap.parse_args()
@@ -622,10 +753,15 @@ def main():
     proto = ProtoLogger(logdir)
     # Attach tap config to logger callable so pump threads can access without globals.
     try:
+        setattr(logger, "_t0", _now() if args.print_ts else None)  # type: ignore[attr-defined]
         setattr(logger, "_tap_udp_left", int(args.tap_udp))  # type: ignore[attr-defined]
         setattr(logger, "_tap_tcp_left", int(args.tap_tcp))  # type: ignore[attr-defined]
         setattr(logger, "_tap_bytes", int(args.tap_bytes))   # type: ignore[attr-defined]
         setattr(logger, "_cmd_print_static", bool(args.print_cmd_static))  # type: ignore[attr-defined]
+        setattr(logger, "_cc_detail", bool(args.print_cc_detail))  # type: ignore[attr-defined]
+        setattr(logger, "_tel_bytes", int(args.tel_bytes))  # type: ignore[attr-defined]
+        setattr(logger, "_tel_min_interval_s", float(args.tel_min_interval))  # type: ignore[attr-defined]
+        setattr(logger, "_stats_interval_s", float(args.stats_interval))  # type: ignore[attr-defined]
         ports = set()
         if args.tap_ports.strip():
             for part in args.tap_ports.split(","):

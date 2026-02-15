@@ -7,6 +7,7 @@ Notes, taken by a real human, from Codex's findings.
   - Port 40000 is for commands.
   - Port 7070 is for video feed (from the drone).
 - Drone is listening on ports 7060, 8060, and 9060 over TCP.
+  - ACTUALLY it turns out Codex may have been lying to us and there is no TCP at all.
 
 ### Startup behavior
 
