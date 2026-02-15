@@ -166,7 +166,7 @@ module uart_tds_out (
   logic [63:0] shifted_input_to_send_out;
   
   command_fifo #(
-      .DEPTH(128),
+      .DEPTH(2048),
       .WIDTH(64)
   ) input_debug_fifo (
       .clk(clk),
