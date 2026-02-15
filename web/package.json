@@ -13,6 +13,8 @@
     "@clerk/nextjs": "^6.37.4",
     "@clerk/themes": "^2.4.52",
     "@hookform/resolvers": "^5.2.2",
+    "@paper-design/shaders-react": "^0.0.71",
+    "animejs": "^4.3.6",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
