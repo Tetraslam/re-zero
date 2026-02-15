@@ -2,8 +2,7 @@
 builder = "nixpacks"
 
 [build.nixpacks]
-aptPkgs = ["gcc"]
-installCmd = "python -m venv --copies /opt/venv && . /opt/venv/bin/activate && pip install uv && uv sync --no-dev --frozen"
+installCmd = "curl -LsSf https://astral.sh/uv/install.sh | sh && . $HOME/.local/bin/env && uv sync --no-dev --frozen"
 
 [deploy]
 startCommand = "uv run uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"
