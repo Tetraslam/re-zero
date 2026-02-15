@@ -5,22 +5,56 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Drone Cloud</title>
     <style>
-      html, body { margin: 0; padding: 0; font: 14px/1.4 system-ui, sans-serif; background: #fff; color: #111; }
-      .wrap { display: grid; grid-template-columns: 1fr 340px; gap: 12px; padding: 12px; }
-      @media (max-width: 900px) { .wrap { grid-template-columns: 1fr; } }
-      .box { border: 1px solid #ddd; padding: 10px; }
-      img { width: 100%; background: #000; }
-      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
-      input { width: 100%; padding: 8px; }
-      button { padding: 8px 10px; margin-right: 8px; margin-top: 8px; }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        font:
+          14px/1.4 system-ui,
+          sans-serif;
+        background: #fff;
+        color: #111;
+      }
+      .wrap {
+        display: grid;
+        grid-template-columns: 1fr 340px;
+        gap: 12px;
+        padding: 12px;
+      }
+      @media (max-width: 900px) {
+        .wrap {
+          grid-template-columns: 1fr;
+        }
+      }
+      .box {
+        border: 1px solid #ddd;
+      }
+      img {
+        width: 100%;
+        background: #000;
+      }
+      .mono {
+        font-family:
+          ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+          'Liberation Mono', 'Courier New', monospace;
+      }
+      input {
+        width: 100%;
+        padding: 8px;
+      }
+      button {
+        padding: 8px 10px;
+        margin-right: 8px;
+        margin-top: 8px;
+      }
     </style>
   </head>
   <body>
-      <div class="wrap">
-        <div class="box">
-          <div class="mono" id="status">connecting...</div>
-          <img id="v" />
-        </div>
+    <div class="wrap">
+      <div class="box">
+        <div class="mono" id="status">connecting...</div>
+        <img id="v" />
+      </div>
       <div class="box">
         <div class="mono">device id</div>
         <input id="dev" value="uplink" />
@@ -36,19 +70,31 @@
         <button id="estop">estop</button>
         <div style="height: 10px"></div>
         <div class="mono">log</div>
-        <pre class="mono" id="log" style="white-space: pre-wrap; max-height: 240px; overflow: auto; border: 1px solid #eee; padding: 8px;"></pre>
+        <pre
+          class="mono"
+          id="log"
+          style="
+            white-space: pre-wrap;
+            max-height: 240px;
+            overflow: auto;
+            border: 1px solid #eee;
+            padding: 8px;
+          "
+        ></pre>
       </div>
     </div>
 
     <script>
-      const statusEl = document.getElementById("status");
-      const imgEl = document.getElementById("v");
-      const devEl = document.getElementById("dev");
-      const logEl = document.getElementById("log");
+      const statusEl = document.getElementById('status');
+      const imgEl = document.getElementById('v');
+      const devEl = document.getElementById('dev');
+      const logEl = document.getElementById('log');
 
       function log(...args) {
-        const msg = args.map(a => (typeof a === "string" ? a : JSON.stringify(a))).join(" ");
-        console.log("[ui]", ...args);
+        const msg = args
+          .map((a) => (typeof a === 'string' ? a : JSON.stringify(a)))
+          .join(' ');
+        console.log('[ui]', ...args);
         const line = `${new Date().toISOString()} ${msg}\n`;
         logEl.textContent = (logEl.textContent + line).slice(-8000);
         logEl.scrollTop = logEl.scrollHeight;
@@ -59,17 +105,31 @@
       const YAW_DELTA = 0x7f;
 
       const pressed = new Set();
-      const MOVE_KEYS = new Set(["w","a","s","d","ArrowUp","ArrowDown","ArrowLeft","ArrowRight"]);
+      const MOVE_KEYS = new Set([
+        'w',
+        'a',
+        's',
+        'd',
+        'ArrowUp',
+        'ArrowDown',
+        'ArrowLeft',
+        'ArrowRight',
+      ]);
 
-      function clamp(x) { return Math.max(0, Math.min(255, x|0)); }
+      function clamp(x) {
+        return Math.max(0, Math.min(255, x | 0));
+      }
 
       function buildCc(x, y, z, r, flags) {
         const p = new Uint8Array(1 + 15);
         p[0] = 0x10;
-        p[1] = 0x63; p[2] = 0x63;
-        p[3] = 0x0a; p[4] = 0x00;
+        p[1] = 0x63;
+        p[2] = 0x63;
+        p[3] = 0x0a;
+        p[4] = 0x00;
         p[5] = 0x00;
-        p[6] = 0x08; p[7] = 0x00;
+        p[6] = 0x08;
+        p[7] = 0x00;
         p[8] = 0x66;
         p[9] = x & 0xff;
         p[10] = y & 0xff;
@@ -82,37 +142,51 @@
       }
 
       function axesFromKeys() {
-        const dx = (pressed.has("d")?1:0) - (pressed.has("a")?1:0);
-        const dy = (pressed.has("w")?1:0) - (pressed.has("s")?1:0); // forward/back flip
-        const dz = (pressed.has("ArrowUp")?1:0) - (pressed.has("ArrowDown")?1:0);
-        const dr = (pressed.has("ArrowRight")?1:0) - (pressed.has("ArrowLeft")?1:0);
-        const x = clamp(NEUTRAL + dx*DELTA);
-        const y = clamp(NEUTRAL + dy*DELTA);
-        const z = clamp(NEUTRAL + dz*DELTA);
-        const r = clamp(NEUTRAL + dr*YAW_DELTA);
-        return {x,y,z,r};
+        const dx = (pressed.has('d') ? 1 : 0) - (pressed.has('a') ? 1 : 0);
+        const dy = (pressed.has('w') ? 1 : 0) - (pressed.has('s') ? 1 : 0); // forward/back flip
+        const dz =
+          (pressed.has('ArrowUp') ? 1 : 0) - (pressed.has('ArrowDown') ? 1 : 0);
+        const dr =
+          (pressed.has('ArrowRight') ? 1 : 0) -
+          (pressed.has('ArrowLeft') ? 1 : 0);
+        const x = clamp(NEUTRAL + dx * DELTA);
+        const y = clamp(NEUTRAL + dy * DELTA);
+        const z = clamp(NEUTRAL + dz * DELTA);
+        const r = clamp(NEUTRAL + dr * YAW_DELTA);
+        return { x, y, z, r };
       }
 
       let ws = null;
       let lastUrl = null;
       let frameN = 0;
       function wsUrl() {
-        const proto = (location.protocol === "https:") ? "wss" : "ws";
-        const dev = encodeURIComponent(devEl.value.trim() || "uplink");
+        const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+        const dev = encodeURIComponent(devEl.value.trim() || 'uplink');
         return `${proto}://${location.host}/ws/ui/${dev}`;
       }
 
       function connectWs() {
-        statusEl.textContent = "ws connecting...";
-        log("connect", wsUrl());
-        try { if (ws) ws.close(); } catch {}
+        statusEl.textContent = 'ws connecting...';
+        log('connect', wsUrl());
+        try {
+          if (ws) ws.close();
+        } catch {}
         ws = new WebSocket(wsUrl());
-        ws.binaryType = "arraybuffer";
-        ws.onopen = () => { statusEl.textContent = "ws connected"; log("open"); };
-        ws.onerror = (e) => { log("error", (e && e.message) ? e.message : String(e)); };
+        ws.binaryType = 'arraybuffer';
+        ws.onopen = () => {
+          statusEl.textContent = 'ws connected';
+          log('open');
+        };
+        ws.onerror = (e) => {
+          log('error', e && e.message ? e.message : String(e));
+        };
         ws.onclose = (e) => {
           statusEl.textContent = `ws disconnected code=${e.code}`;
-          log("close", {code:e.code, reason:e.reason, wasClean:e.wasClean});
+          log('close', {
+            code: e.code,
+            reason: e.reason,
+            wasClean: e.wasClean,
+          });
           setTimeout(connectWs, 800);
         };
         ws.onmessage = async (ev) => {
@@ -123,7 +197,7 @@
           const typ = u8[0];
           if (typ !== 0x01) return; // JPEG
           const jpg = u8.slice(1);
-          const blob = new Blob([jpg], {type:"image/jpeg"});
+          const blob = new Blob([jpg], { type: 'image/jpeg' });
           const url = URL.createObjectURL(blob);
           imgEl.src = url;
           if (lastUrl) URL.revokeObjectURL(lastUrl);
@@ -139,34 +213,58 @@
       }
 
       function tick() {
-        const {x,y,z,r} = axesFromKeys();
-        wsSendBytes(buildCc(x,y,z,r,0));
+        const { x, y, z, r } = axesFromKeys();
+        wsSendBytes(buildCc(x, y, z, r, 0));
       }
 
-      devEl.addEventListener("change", () => { connectWs(); });
+      devEl.addEventListener('change', () => {
+        connectWs();
+      });
 
-      window.addEventListener("keydown", (e) => {
-        const k = e.key === " " ? "Space" : e.key;
-        if (MOVE_KEYS.has(k) || k === "Shift" || k === "Control" || k === "Alt" || k === "Space") e.preventDefault();
-        if (e.repeat) return;
-        pressed.add(k);
-        if (k === "Shift") wsSendBytes(new Uint8Array([0x11, 0x01, 0x5e, 0x01]));
-        if (k === "Control") wsSendBytes(new Uint8Array([0x11, 0x02, 0x5e, 0x01]));
-        if (k === "Alt") wsSendBytes(new Uint8Array([0x11, 0x10, 0xbc, 0x02]));
-        if (k === "Space") wsSendBytes(new Uint8Array([0x11, 0x04, 0x5e, 0x01]));
-      }, {passive:false});
+      window.addEventListener(
+        'keydown',
+        (e) => {
+          const k = e.key === ' ' ? 'Space' : e.key;
+          if (
+            MOVE_KEYS.has(k) ||
+            k === 'Shift' ||
+            k === 'Control' ||
+            k === 'Alt' ||
+            k === 'Space'
+          )
+            e.preventDefault();
+          if (e.repeat) return;
+          pressed.add(k);
+          if (k === 'Shift')
+            wsSendBytes(new Uint8Array([0x11, 0x01, 0x5e, 0x01]));
+          if (k === 'Control')
+            wsSendBytes(new Uint8Array([0x11, 0x02, 0x5e, 0x01]));
+          if (k === 'Alt')
+            wsSendBytes(new Uint8Array([0x11, 0x10, 0xbc, 0x02]));
+          if (k === 'Space')
+            wsSendBytes(new Uint8Array([0x11, 0x04, 0x5e, 0x01]));
+        },
+        { passive: false },
+      );
 
-      window.addEventListener("keyup", (e) => {
-        const k = e.key === " " ? "Space" : e.key;
+      window.addEventListener('keyup', (e) => {
+        const k = e.key === ' ' ? 'Space' : e.key;
         pressed.delete(k);
       });
 
-      window.addEventListener("blur", () => { pressed.clear(); wsSendBytes(new Uint8Array([0x12])); });
+      window.addEventListener('blur', () => {
+        pressed.clear();
+        wsSendBytes(new Uint8Array([0x12]));
+      });
 
-      document.getElementById("takeoff").onclick = () => wsSendBytes(new Uint8Array([0x11, 0x01, 0x5e, 0x01]));
-      document.getElementById("land").onclick = () => wsSendBytes(new Uint8Array([0x11, 0x02, 0x5e, 0x01]));
-      document.getElementById("calib").onclick = () => wsSendBytes(new Uint8Array([0x11, 0x10, 0xbc, 0x02]));
-      document.getElementById("estop").onclick = () => wsSendBytes(new Uint8Array([0x11, 0x04, 0x5e, 0x01]));
+      document.getElementById('takeoff').onclick = () =>
+        wsSendBytes(new Uint8Array([0x11, 0x01, 0x5e, 0x01]));
+      document.getElementById('land').onclick = () =>
+        wsSendBytes(new Uint8Array([0x11, 0x02, 0x5e, 0x01]));
+      document.getElementById('calib').onclick = () =>
+        wsSendBytes(new Uint8Array([0x11, 0x10, 0xbc, 0x02]));
+      document.getElementById('estop').onclick = () =>
+        wsSendBytes(new Uint8Array([0x11, 0x04, 0x5e, 0x01]));
 
       connectWs();
       setInterval(tick, 50);
