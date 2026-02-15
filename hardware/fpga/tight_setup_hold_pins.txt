@@ -1,0 +1,16 @@
++====================+===================+===================================================+
+| Launch Setup Clock | Launch Hold Clock | Pin                                               |
++====================+===================+===================================================+
+| clk_capture_inst   | clk_capture_inst  | uart_out_inst/transmit_inst/copied_din_reg[5]/D   |
+| clk_capture_inst   | clk_capture_inst  | uart_out_inst/transmit_inst/copied_din_reg[3]/D   |
+| clk_capture_inst   | clk_capture_inst  | uart_out_inst/transmit_inst/copied_din_reg[0]/D   |
+| clk_capture_inst   | clk_capture_inst  | uart_out_inst/transmit_inst/copied_din_reg[4]/D   |
+| clk_capture_inst   | clk_capture_inst  | uart_out_inst/shifted_input_to_send_out_reg[20]/D |
+| clk_capture_inst   | clk_capture_inst  | uart_out_inst/shifted_input_to_send_out_reg[16]/D |
+| clk_capture_inst   | clk_capture_inst  | uart_out_inst/transmit_inst/copied_din_reg[2]/D   |
+| clk_capture_inst   | clk_capture_inst  | uart_out_inst/shifted_input_to_send_out_reg[17]/D |
+| clk_capture_inst   | clk_capture_inst  | uart_out_inst/transmit_inst/copied_din_reg[1]/D   |
+| clk_capture_inst   | clk_capture_inst  | uart_out_inst/shifted_input_to_send_out_reg[28]/D |
+| clk_capture_inst   | clk_capture_inst  | uart_out_inst/shifted_input_to_send_out_reg[11]/D |
+| clk_capture_inst   | clk_capture_inst  | uart_out_inst/shifted_input_to_send_out_reg[27]/D |
++--------------------+-------------------+---------------------------------------------------+

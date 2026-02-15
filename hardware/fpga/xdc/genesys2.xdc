@@ -68,7 +68,7 @@ set_property -dict { PACKAGE_PIN U27 IOSTANDARD LVCMOS33 } [get_ports { esp_clk_
 create_clock -add -name esp_clk_pin -period 25.00 -waveform {0 12.5} [get_ports { esp_clk_gpio }];
 set_property -dict { PACKAGE_PIN U28 IOSTANDARD LVCMOS33 } [get_ports { esp_trigger_gpio }];  # JC1
 set_clock_groups -asynchronous \
-    -group [get_clocks -include_generated_clocks sysclk_p] \
+    -group [get_clocks -include_generated_clocks sysclk_200mhz] \
     -group [get_clocks -include_generated_clocks esp_clk_pin]
 
 # PMOD A Signals (this project top-level currently has no `pmoda[]` ports)

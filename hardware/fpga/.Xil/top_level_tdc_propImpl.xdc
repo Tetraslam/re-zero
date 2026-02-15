@@ -53,8 +53,6 @@ set_property src_info {type:XDC file:1 line:67 export:INPUT save:INPUT read:READ
 set_property -dict { PACKAGE_PIN U27 IOSTANDARD LVCMOS33 } [get_ports { esp_clk_gpio }];  # JA1_P
 set_property src_info {type:XDC file:1 line:69 export:INPUT save:INPUT read:READ} [current_design]
 set_property -dict { PACKAGE_PIN U28 IOSTANDARD LVCMOS33 } [get_ports { esp_trigger_gpio }];  # JC1
-set_property src_info {type:XDC file:1 line:70 export:INPUT save:INPUT read:READ} [current_design]
-set_clock_groups -asynchronous -group [get_clocks -include_generated_clocks sysclk_p] -group [get_clocks -include_generated_clocks esp_clk_pin]
 set_property src_info {type:XDC file:1 line:105 export:INPUT save:INPUT read:READ} [current_design]
 set_property -dict { PACKAGE_PIN AB20 IOSTANDARD TMDS_33 } [get_ports {hdmi_clk_n}]
 set_property src_info {type:XDC file:1 line:106 export:INPUT save:INPUT read:READ} [current_design]

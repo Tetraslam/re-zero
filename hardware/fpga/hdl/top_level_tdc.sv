@@ -8,8 +8,14 @@ module top_level_tdc (
     input wire [4:0] btn,
     input wire [7:0] sw,
     output logic [7:0] led,
-    input wire esp_trigger_gpio
+    input wire esp_trigger_gpio,
+
+    output logic uart_txd
 );
+    // switch to do uart out
+    logic uart_switch;
+    assign uart_switch = sw[7];
+
     logic rst;
     assign rst = btn[0];
     
@@ -24,12 +30,15 @@ module top_level_tdc (
     logic debug_expand;
     assign debug_expand = sw[1];
 
+    logic btn_up_trigger;
+
     logic do_inc;
+    assign do_inc = btn_up_trigger && !uart_switch;
     button_trigger up(
         .clk(sysclk_200mhz_passthrough),
         .sys_rst(rst),
         .signal(btn_up_raw),
-        .clean_signal(do_inc)
+        .clean_signal(btn_up_trigger)
     );
     logic do_dec;
     button_trigger down(
@@ -44,31 +53,40 @@ module top_level_tdc (
     logic theta_dir;
     assign theta_dir = do_inc; 
 
+    always_ff @(posedge sysclk_200mhz_passthrough) begin
+        if (rst) begin
+            debug_counter <= 0;
+        end
+        else if (theta_pulse) begin
+            debug_counter <= theta_dir ? debug_counter + 1 : debug_counter - 1;
+        end
+    end
+
     // only for phi
     logic btn_left_raw;
     assign btn_left_raw = btn[2];
     logic btn_right_raw;
     assign btn_right_raw = btn[3];
 
-    logic do_inc_phi;
+    logic do_dec_phi;
     button_trigger left(
         .clk(sysclk_200mhz_passthrough),
         .sys_rst(rst),
         .signal(btn_left_raw),
-        .clean_signal(do_inc_phi)
+        .clean_signal(do_dec_phi)
     );
-    logic do_dec_phi;
+    logic do_inc_phi;
     button_trigger right(
         .clk(sysclk_200mhz_passthrough),
         .sys_rst(rst),
         .signal(btn_right_raw),
-        .clean_signal(do_dec_phi)
+        .clean_signal(do_inc_phi)
     );
     logic locked_phi;
     logic phi_pulse;
     assign phi_pulse = (do_inc_phi || do_dec_phi) && locked_phi;
     logic phi_dir;
-    assign phi_dir = do_inc_phi; 
+    assign phi_dir = do_inc_phi;     
 
     logic sysclk_200mhz_passthrough;
     logic clk_launch, clk_capture;
@@ -83,8 +101,8 @@ module top_level_tdc (
 
         // phi tuning (ESP sync)
         .phi_ps_clk(sysclk_200mhz_passthrough),
-        .phi_ps_en(0),
-        .phi_ps_incdec(0),
+        .phi_ps_en(phi_pulse),
+        .phi_ps_incdec(phi_dir),
         .phi_ps_done(),
         .phi_ready(locked_phi),
 
@@ -158,5 +176,38 @@ module top_level_tdc (
             led[0] = tdc_data[63]; 
         end
     end
+
+    // logic btn_up_trigger_synced;
+    // xpm_cdc_single #(
+    //     .DEST_SYNC_FF(2),     // Number of synchronizer stages (2 is minimum)
+    //     .SRC_INPUT_REG(0)     // 0 = no input register, 1 = add input register
+    // ) btn_trigger_cdc (
+    //     .src_clk(sysclk_200mhz_passthrough),
+    //     .src_in(btn_up_trigger),
+    //     .dest_clk(clk_capture),
+    //     .dest_out(btn_up_trigger_synced)
+    // );
+    logic esp_trigger_synced;
+    xpm_cdc_single #(
+        .DEST_SYNC_FF(2),
+        .SRC_INPUT_REG(0)
+    ) esp_trigger_cdc (
+        .src_clk(sysclk_200mhz_passthrough), // Or whatever clock the IBUF is on
+        .src_in(esp_trigger),                // The signal from the GPIO IBUF
+        .dest_clk(clk_capture),              // The clock used by UART/TDC
+        .dest_out(esp_trigger_synced)
+    );
+
+    uart_tds_out uart_out_inst(
+        .clk(clk_capture),
+        .rst(rst),  // replace w/ your system reset
+        .uart_txd(uart_txd),
+        .input_debug_full(),
+
+        // tds delay debug lines
+        .tds_delay_trace(tdc_data),
+        // .tds_delay_valid(uart_switch && btn_up_trigger_synced)
+        .tds_delay_valid(esp_trigger_synced)
+    );
 endmodule
 `default_nettype wire
