@@ -51,13 +51,13 @@ function OssVisual() {
           key={l.n}
           className={
             l.hl === "critical"
-              ? "text-[#dc4242]/60 bg-[#dc4242]/5 -mx-3 sm:-mx-4 px-3 sm:px-4"
+              ? "text-[#dc4242]/80 bg-[#dc4242]/8 -mx-3 sm:-mx-4 px-3 sm:px-4"
               : l.hl === "high"
-                ? "text-[#e8a84f]/60 bg-[#e8a84f]/5 -mx-3 sm:-mx-4 px-3 sm:px-4"
-                : "text-[#cfd2e3]/20"
+                ? "text-[#e8a84f]/80 bg-[#e8a84f]/8 -mx-3 sm:-mx-4 px-3 sm:px-4"
+                : "text-[#cfd2e3]/40"
           }
         >
-          <span className="text-[#cfd2e3]/10 inline-block w-4 text-right mr-4 select-none">
+          <span className="text-[#cfd2e3]/20 inline-block w-4 text-right mr-4 select-none">
             {l.n}
           </span>
           {l.code}
@@ -70,36 +70,36 @@ function OssVisual() {
 function WebVisual() {
   return (
     <svg viewBox="0 0 260 180" fill="none" className="w-full max-w-[280px] mx-auto">
-      <rect x="0.5" y="0.5" width="259" height="179" stroke="#6b82ff" strokeWidth="1" opacity="0.2" />
-      <line x1="0" y1="24" x2="260" y2="24" stroke="#6b82ff" strokeWidth="0.5" opacity="0.15" />
-      <rect x="6" y="4" width="70" height="16" stroke="#6b82ff" strokeWidth="0.5" opacity="0.1" />
-      <rect x="6" y="28" width="248" height="14" stroke="#6b82ff" strokeWidth="0.5" opacity="0.1" />
-      <text x="12" y="38" fill="#6b82ff" fontSize="7" fontFamily="monospace" opacity="0.2">
+      <rect x="0.5" y="0.5" width="259" height="179" stroke="#6b82ff" strokeWidth="1" opacity="0.35" />
+      <line x1="0" y1="24" x2="260" y2="24" stroke="#6b82ff" strokeWidth="0.5" opacity="0.3" />
+      <rect x="6" y="4" width="70" height="16" stroke="#6b82ff" strokeWidth="0.5" opacity="0.2" />
+      <rect x="6" y="28" width="248" height="14" stroke="#6b82ff" strokeWidth="0.5" opacity="0.2" />
+      <text x="12" y="38" fill="#6b82ff" fontSize="7" fontFamily="monospace" opacity="0.4">
         https://target.com/login
       </text>
-      <rect x="12" y="52" width="90" height="7" fill="#6b82ff" opacity="0.06" />
-      <rect x="12" y="64" width="236" height="4" fill="#6b82ff" opacity="0.04" />
-      <rect x="12" y="72" width="180" height="4" fill="#6b82ff" opacity="0.04" />
-      <rect x="12" y="88" width="160" height="76" stroke="#dc4242" strokeWidth="1" opacity="0.3">
-        <animate attributeName="opacity" values="0.2;0.4;0.2" dur="2s" repeatCount="indefinite" />
+      <rect x="12" y="52" width="90" height="7" fill="#6b82ff" opacity="0.12" />
+      <rect x="12" y="64" width="236" height="4" fill="#6b82ff" opacity="0.08" />
+      <rect x="12" y="72" width="180" height="4" fill="#6b82ff" opacity="0.08" />
+      <rect x="12" y="88" width="160" height="76" stroke="#dc4242" strokeWidth="1.5" opacity="0.5">
+        <animate attributeName="opacity" values="0.35;0.6;0.35" dur="2s" repeatCount="indefinite" />
       </rect>
-      <rect x="20" y="96" width="144" height="12" stroke="#6b82ff" strokeWidth="0.5" opacity="0.1" />
-      <rect x="20" y="114" width="144" height="12" stroke="#6b82ff" strokeWidth="0.5" opacity="0.1" />
-      <rect x="20" y="134" width="70" height="16" fill="#6b82ff" opacity="0.08" />
-      <text x="180" y="105" fill="#dc4242" fontSize="6.5" fontFamily="monospace" opacity="0.35">
+      <rect x="20" y="96" width="144" height="12" stroke="#6b82ff" strokeWidth="0.5" opacity="0.2" />
+      <rect x="20" y="114" width="144" height="12" stroke="#6b82ff" strokeWidth="0.5" opacity="0.2" />
+      <rect x="20" y="134" width="70" height="16" fill="#6b82ff" opacity="0.15" />
+      <text x="180" y="105" fill="#dc4242" fontSize="6.5" fontFamily="monospace" opacity="0.6">
         {"<script>"}
       </text>
-      <text x="180" y="120" fill="#e8a84f" fontSize="6.5" fontFamily="monospace" opacity="0.35">
+      <text x="180" y="120" fill="#e8a84f" fontSize="6.5" fontFamily="monospace" opacity="0.6">
         CSRF token
       </text>
-      <text x="180" y="135" fill="#dc4242" fontSize="6.5" fontFamily="monospace" opacity="0.35">
+      <text x="180" y="135" fill="#dc4242" fontSize="6.5" fontFamily="monospace" opacity="0.6">
         SSRF probe
       </text>
-      <line x1="82" y1="110" x2="112" y2="110" stroke="#dc4242" strokeWidth="0.5" opacity="0.25" />
-      <line x1="97" y1="95" x2="97" y2="125" stroke="#dc4242" strokeWidth="0.5" opacity="0.25" />
-      <circle cx="97" cy="110" r="15" stroke="#dc4242" strokeWidth="0.5" opacity="0.15">
+      <line x1="82" y1="110" x2="112" y2="110" stroke="#dc4242" strokeWidth="0.8" opacity="0.4" />
+      <line x1="97" y1="95" x2="97" y2="125" stroke="#dc4242" strokeWidth="0.8" opacity="0.4" />
+      <circle cx="97" cy="110" r="15" stroke="#dc4242" strokeWidth="0.8" opacity="0.3">
         <animate attributeName="r" values="12;18;12" dur="2s" repeatCount="indefinite" />
-        <animate attributeName="opacity" values="0.15;0.05;0.15" dur="2s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0.3;0.1;0.3" dur="2s" repeatCount="indefinite" />
       </circle>
     </svg>
   );
@@ -108,32 +108,32 @@ function WebVisual() {
 function DroneVisual() {
   return (
     <svg viewBox="0 0 200 200" fill="none" className="w-full max-w-[200px] sm:max-w-[240px] mx-auto">
-      <line x1="34" y1="34" x2="84" y2="84" stroke="#6b82ff" strokeWidth="1.5" opacity="0.25" />
-      <line x1="166" y1="34" x2="116" y2="84" stroke="#6b82ff" strokeWidth="1.5" opacity="0.25" />
-      <line x1="34" y1="166" x2="84" y2="116" stroke="#6b82ff" strokeWidth="1.5" opacity="0.25" />
-      <line x1="166" y1="166" x2="116" y2="116" stroke="#6b82ff" strokeWidth="1.5" opacity="0.25" />
-      <rect x="82" y="82" width="36" height="36" stroke="#6b82ff" strokeWidth="1.5" fill="none" opacity="0.35" />
-      <circle cx="34" cy="34" r="22" stroke="#6b82ff" strokeWidth="0.8" opacity="0.2" />
-      <circle cx="166" cy="34" r="22" stroke="#6b82ff" strokeWidth="0.8" opacity="0.2" />
-      <circle cx="34" cy="166" r="22" stroke="#6b82ff" strokeWidth="0.8" opacity="0.2" />
-      <circle cx="166" cy="166" r="22" stroke="#6b82ff" strokeWidth="0.8" opacity="0.2" />
-      <circle cx="34" cy="34" r="2" fill="#6b82ff" opacity="0.35" />
-      <circle cx="166" cy="34" r="2" fill="#6b82ff" opacity="0.35" />
-      <circle cx="34" cy="166" r="2" fill="#6b82ff" opacity="0.35" />
-      <circle cx="166" cy="166" r="2" fill="#6b82ff" opacity="0.35" />
-      <circle cx="100" cy="100" r="40" stroke="#6b82ff" strokeWidth="0.5" opacity="0">
+      <line x1="34" y1="34" x2="84" y2="84" stroke="#6b82ff" strokeWidth="1.5" opacity="0.45" />
+      <line x1="166" y1="34" x2="116" y2="84" stroke="#6b82ff" strokeWidth="1.5" opacity="0.45" />
+      <line x1="34" y1="166" x2="84" y2="116" stroke="#6b82ff" strokeWidth="1.5" opacity="0.45" />
+      <line x1="166" y1="166" x2="116" y2="116" stroke="#6b82ff" strokeWidth="1.5" opacity="0.45" />
+      <rect x="82" y="82" width="36" height="36" stroke="#6b82ff" strokeWidth="1.5" fill="none" opacity="0.55" />
+      <circle cx="34" cy="34" r="22" stroke="#6b82ff" strokeWidth="1" opacity="0.35" />
+      <circle cx="166" cy="34" r="22" stroke="#6b82ff" strokeWidth="1" opacity="0.35" />
+      <circle cx="34" cy="166" r="22" stroke="#6b82ff" strokeWidth="1" opacity="0.35" />
+      <circle cx="166" cy="166" r="22" stroke="#6b82ff" strokeWidth="1" opacity="0.35" />
+      <circle cx="34" cy="34" r="2.5" fill="#6b82ff" opacity="0.6" />
+      <circle cx="166" cy="34" r="2.5" fill="#6b82ff" opacity="0.6" />
+      <circle cx="34" cy="166" r="2.5" fill="#6b82ff" opacity="0.6" />
+      <circle cx="166" cy="166" r="2.5" fill="#6b82ff" opacity="0.6" />
+      <circle cx="100" cy="100" r="40" stroke="#6b82ff" strokeWidth="0.8" opacity="0">
         <animate attributeName="r" from="40" to="96" dur="3s" repeatCount="indefinite" />
-        <animate attributeName="opacity" from="0.15" to="0" dur="3s" repeatCount="indefinite" />
+        <animate attributeName="opacity" from="0.3" to="0" dur="3s" repeatCount="indefinite" />
       </circle>
-      <circle cx="100" cy="100" r="40" stroke="#6b82ff" strokeWidth="0.5" opacity="0">
+      <circle cx="100" cy="100" r="40" stroke="#6b82ff" strokeWidth="0.8" opacity="0">
         <animate attributeName="r" from="40" to="96" dur="3s" begin="1s" repeatCount="indefinite" />
-        <animate attributeName="opacity" from="0.15" to="0" dur="3s" begin="1s" repeatCount="indefinite" />
+        <animate attributeName="opacity" from="0.3" to="0" dur="3s" begin="1s" repeatCount="indefinite" />
       </circle>
-      <circle cx="100" cy="100" r="40" stroke="#6b82ff" strokeWidth="0.5" opacity="0">
+      <circle cx="100" cy="100" r="40" stroke="#6b82ff" strokeWidth="0.8" opacity="0">
         <animate attributeName="r" from="40" to="96" dur="3s" begin="2s" repeatCount="indefinite" />
-        <animate attributeName="opacity" from="0.15" to="0" dur="3s" begin="2s" repeatCount="indefinite" />
+        <animate attributeName="opacity" from="0.3" to="0" dur="3s" begin="2s" repeatCount="indefinite" />
       </circle>
-      <text x="100" y="196" fill="#cfd2e3" fontSize="7" fontFamily="monospace" textAnchor="middle" opacity="0.15">
+      <text x="100" y="196" fill="#cfd2e3" fontSize="7" fontFamily="monospace" textAnchor="middle" opacity="0.3">
         MAVLink v2
       </text>
     </svg>
@@ -143,27 +143,27 @@ function DroneVisual() {
 function FpgaVisual() {
   return (
     <svg viewBox="0 0 400 130" fill="none" className="w-full" preserveAspectRatio="xMidYMid meet">
-      <line x1="0" y1="30" x2="400" y2="30" stroke="#6b82ff" strokeWidth="0.3" opacity="0.07" />
-      <line x1="0" y1="60" x2="400" y2="60" stroke="#6b82ff" strokeWidth="0.3" opacity="0.07" />
-      <line x1="0" y1="90" x2="400" y2="90" stroke="#6b82ff" strokeWidth="0.3" opacity="0.07" />
+      <line x1="0" y1="30" x2="400" y2="30" stroke="#6b82ff" strokeWidth="0.3" opacity="0.15" />
+      <line x1="0" y1="60" x2="400" y2="60" stroke="#6b82ff" strokeWidth="0.3" opacity="0.15" />
+      <line x1="0" y1="90" x2="400" y2="90" stroke="#6b82ff" strokeWidth="0.3" opacity="0.15" />
       <polyline
         className="power-trace"
         style={{ strokeDasharray: 1200, strokeDashoffset: 1200 }}
         points="0,60 10,61 20,59 30,60 40,61 50,60 60,58 65,55 70,18 73,80 76,22 79,75 82,28 85,70 88,55 93,58 100,60 110,61 120,59 130,60 140,61 150,60 155,58 160,55 165,20 168,78 171,24 174,73 177,30 180,68 183,55 188,58 195,60 205,61 215,59 225,60 235,61 245,60 250,58 255,55 260,22 263,76 266,26 269,72 272,32 275,66 278,55 283,58 290,60 300,61 310,59 320,60 330,61 340,58 345,55 350,19 353,79 356,23 359,74 362,29 365,69 368,55 373,58 380,60 390,61 400,60"
         stroke="#6b82ff"
-        strokeWidth="1.2"
-        opacity="0.5"
+        strokeWidth="1.5"
+        opacity="0.7"
       />
       <text className="key-anno" x="76" y="108" fill="#dc4242" fontSize="7" fontFamily="monospace" opacity="0">0x4F</text>
       <text className="key-anno" x="171" y="108" fill="#dc4242" fontSize="7" fontFamily="monospace" opacity="0">0x68</text>
       <text className="key-anno" x="266" y="108" fill="#dc4242" fontSize="7" fontFamily="monospace" opacity="0">0xE8</text>
       <text className="key-anno" x="359" y="108" fill="#dc4242" fontSize="7" fontFamily="monospace" opacity="0">0xA1</text>
-      <line x1="0" y1="0" x2="0" y2="130" stroke="#6b82ff" strokeWidth="1" opacity="0.2">
+      <line x1="0" y1="0" x2="0" y2="130" stroke="#6b82ff" strokeWidth="1" opacity="0.35">
         <animate attributeName="x1" from="0" to="400" dur="4s" repeatCount="indefinite" />
         <animate attributeName="x2" from="0" to="400" dur="4s" repeatCount="indefinite" />
       </line>
-      <text x="0" y="126" fill="#cfd2e3" fontSize="6" fontFamily="monospace" opacity="0.1">power (mW)</text>
-      <text x="375" y="126" fill="#cfd2e3" fontSize="6" fontFamily="monospace" opacity="0.1">time</text>
+      <text x="0" y="126" fill="#cfd2e3" fontSize="6" fontFamily="monospace" opacity="0.25">power (mW)</text>
+      <text x="375" y="126" fill="#cfd2e3" fontSize="6" fontFamily="monospace" opacity="0.25">time</text>
     </svg>
   );
 }
@@ -459,7 +459,7 @@ export function LandingContent() {
             <div className="w-[7px] h-[7px] rounded-full bg-[#c53528]/60" />
             <div className="w-[7px] h-[7px] rounded-full bg-[#c5a028]/60" />
             <div className="w-[7px] h-[7px] rounded-full bg-[#28c55a]/60" />
-            <span className="text-[11px] text-[#cfd2e3]/20 ml-3 font-mono">
+            <span className="text-[11px] text-[#cfd2e3]/35 ml-3 font-mono">
               rem &mdash; live scan
             </span>
           </div>
@@ -474,11 +474,11 @@ export function LandingContent() {
                     : line.type === "cmd"
                       ? "text-white"
                       : line.type === "sys"
-                        ? "text-[#cfd2e3]/25"
+                        ? "text-[#cfd2e3]/45"
                         : line.type === "reason"
-                          ? "text-[#6b82ff]/60"
+                          ? "text-[#6b82ff]/80"
                           : line.type === "tool"
-                            ? "text-[#cfd2e3]/20"
+                            ? "text-[#cfd2e3]/40"
                             : line.type === "finding-critical"
                               ? "text-[#dc4242]"
                               : line.type === "finding-high"
@@ -496,7 +496,7 @@ export function LandingContent() {
         {/* ── Attack modes ─────────────────────────── */}
         <section className="relative z-10 border-t border-[#222645] px-6 sm:px-8 pb-16 sm:pb-24 pt-16 sm:pt-20">
           <div className="max-w-6xl mx-auto">
-            <span className="text-[11px] text-[#cfd2e3]/15 font-mono tracking-widest uppercase">
+            <span className="text-[11px] text-[#cfd2e3]/35 font-mono tracking-widest uppercase">
               Attack modes
             </span>
 
@@ -513,14 +513,14 @@ export function LandingContent() {
                     {MODE_VISUAL[m.id]}
                   </div>
                   <div className="w-full lg:w-3/5">
-                    <h3 className="font-mono text-[13px] sm:text-[15px] text-white/80">
+                    <h3 className="font-mono text-[13px] sm:text-[15px] text-white">
                       $ rem --mode{" "}
                       <span className="text-[#6b82ff]">{m.cmd}</span>
                     </h3>
-                    <p className="text-[12px] sm:text-[13px] text-[#cfd2e3]/25 mt-2 italic">
+                    <p className="text-[12px] sm:text-[13px] text-[#cfd2e3]/50 mt-2 italic">
                       {m.tagline}
                     </p>
-                    <p className="text-[13px] text-[#cfd2e3]/40 mt-5 leading-relaxed max-w-md">
+                    <p className="text-[13px] text-[#cfd2e3]/60 mt-5 leading-relaxed max-w-md">
                       {m.desc}
                     </p>
                   </div>
@@ -540,7 +540,7 @@ export function LandingContent() {
       {/* ═══ CLOSING ═══════════════════════════════════ */}
       <section
         data-section="closing"
-        className="relative overflow-hidden"
+        className="relative overflow-hidden min-h-[70vh] flex flex-col"
       >
         {mounted && (
           <div className="absolute inset-0 z-0">
@@ -557,8 +557,8 @@ export function LandingContent() {
           </div>
         )}
 
-        <div className="close-inner relative z-10 flex flex-col items-center py-24 sm:py-32 gap-8 opacity-0">
-          <span className="text-[11px] text-muted-foreground/30 font-mono tracking-widest">
+        <div className="close-inner relative z-10 flex-1 flex flex-col items-center justify-center gap-8 opacity-0">
+          <span className="text-[11px] text-muted-foreground font-mono tracking-widest">
             OPUS 4.6 &middot; GLM-4.7V &middot; NEMOTRON
           </span>
 
@@ -572,17 +572,17 @@ export function LandingContent() {
             </button>
           </SignInButton>
 
-          <p className="text-xs text-muted-foreground/30 text-center max-w-xs leading-relaxed mt-4">
+          <p className="text-sm text-muted-foreground/70 text-center max-w-xs leading-relaxed mt-4">
             Rem probes, fails, learns, returns.
             <br />
             Each scan is a life. Knowledge accumulates.
           </p>
         </div>
-      </section>
 
-      <footer className="px-6 sm:px-8 h-14 flex items-center border-t border-border">
-        <span className="text-xs text-muted-foreground">return from zero</span>
-      </footer>
+        <footer className="relative z-10 px-6 sm:px-8 h-14 flex items-center border-t border-border">
+          <span className="text-xs text-muted-foreground">return from zero</span>
+        </footer>
+      </section>
     </div>
   );
 }
