@@ -9,7 +9,7 @@ const Dithering = dynamic(
   { ssr: false }
 );
 
-/* ── Simulated scan for the terminal ─────────────────── */
+/* ── Terminal scan data ──────────────────────────────── */
 const SCAN_LINES: { type: string; text: string }[] = [
   { type: "cmd", text: "$ rem deploy --target github.com/acme/payments-api" },
   { type: "sys", text: "  indexing 1,247 files \u00b7 building dependency graph" },
@@ -31,29 +31,179 @@ const SCAN_LINES: { type: string; text: string }[] = [
   { type: "sys", text: "  complete \u2014 3 findings \u00b7 2 critical \u00b7 1 high" },
 ];
 
-/* ── Attack surfaces ─────────────────────────────────── */
-const SURFACES = [
+/* ── Mode visuals ────────────────────────────────────── */
+
+function OssVisual() {
+  const lines = [
+    { n: 1, code: "import jwt from 'jsonwebtoken';", hl: "" },
+    { n: 2, code: "", hl: "" },
+    { n: 3, code: 'const SECRET = "sk-prod-a8f3e2d1";', hl: "critical" },
+    { n: 4, code: "", hl: "" },
+    { n: 5, code: "app.get('/users/:id', (req, res) => {", hl: "" },
+    { n: 6, code: "  db.query(`SELECT * FROM users", hl: "high" },
+    { n: 7, code: "    WHERE id = ${req.params.id}`)", hl: "high" },
+    { n: 8, code: "});", hl: "" },
+  ];
+  return (
+    <div className="font-mono text-[10px] sm:text-[11px] leading-[2] border border-[#222645] p-3 sm:p-4 overflow-x-auto">
+      {lines.map((l) => (
+        <div
+          key={l.n}
+          className={
+            l.hl === "critical"
+              ? "text-[#dc4242]/60 bg-[#dc4242]/5 -mx-3 sm:-mx-4 px-3 sm:px-4"
+              : l.hl === "high"
+                ? "text-[#e8a84f]/60 bg-[#e8a84f]/5 -mx-3 sm:-mx-4 px-3 sm:px-4"
+                : "text-[#cfd2e3]/20"
+          }
+        >
+          <span className="text-[#cfd2e3]/10 inline-block w-4 text-right mr-4 select-none">
+            {l.n}
+          </span>
+          {l.code}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function WebVisual() {
+  return (
+    <svg viewBox="0 0 260 180" fill="none" className="w-full max-w-[280px] mx-auto">
+      <rect x="0.5" y="0.5" width="259" height="179" stroke="#6b82ff" strokeWidth="1" opacity="0.2" />
+      <line x1="0" y1="24" x2="260" y2="24" stroke="#6b82ff" strokeWidth="0.5" opacity="0.15" />
+      <rect x="6" y="4" width="70" height="16" stroke="#6b82ff" strokeWidth="0.5" opacity="0.1" />
+      <rect x="6" y="28" width="248" height="14" stroke="#6b82ff" strokeWidth="0.5" opacity="0.1" />
+      <text x="12" y="38" fill="#6b82ff" fontSize="7" fontFamily="monospace" opacity="0.2">
+        https://target.com/login
+      </text>
+      <rect x="12" y="52" width="90" height="7" fill="#6b82ff" opacity="0.06" />
+      <rect x="12" y="64" width="236" height="4" fill="#6b82ff" opacity="0.04" />
+      <rect x="12" y="72" width="180" height="4" fill="#6b82ff" opacity="0.04" />
+      <rect x="12" y="88" width="160" height="76" stroke="#dc4242" strokeWidth="1" opacity="0.3">
+        <animate attributeName="opacity" values="0.2;0.4;0.2" dur="2s" repeatCount="indefinite" />
+      </rect>
+      <rect x="20" y="96" width="144" height="12" stroke="#6b82ff" strokeWidth="0.5" opacity="0.1" />
+      <rect x="20" y="114" width="144" height="12" stroke="#6b82ff" strokeWidth="0.5" opacity="0.1" />
+      <rect x="20" y="134" width="70" height="16" fill="#6b82ff" opacity="0.08" />
+      <text x="180" y="105" fill="#dc4242" fontSize="6.5" fontFamily="monospace" opacity="0.35">
+        {"<script>"}
+      </text>
+      <text x="180" y="120" fill="#e8a84f" fontSize="6.5" fontFamily="monospace" opacity="0.35">
+        CSRF token
+      </text>
+      <text x="180" y="135" fill="#dc4242" fontSize="6.5" fontFamily="monospace" opacity="0.35">
+        SSRF probe
+      </text>
+      <line x1="82" y1="110" x2="112" y2="110" stroke="#dc4242" strokeWidth="0.5" opacity="0.25" />
+      <line x1="97" y1="95" x2="97" y2="125" stroke="#dc4242" strokeWidth="0.5" opacity="0.25" />
+      <circle cx="97" cy="110" r="15" stroke="#dc4242" strokeWidth="0.5" opacity="0.15">
+        <animate attributeName="r" values="12;18;12" dur="2s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0.15;0.05;0.15" dur="2s" repeatCount="indefinite" />
+      </circle>
+    </svg>
+  );
+}
+
+function DroneVisual() {
+  return (
+    <svg viewBox="0 0 200 200" fill="none" className="w-full max-w-[200px] sm:max-w-[240px] mx-auto">
+      <line x1="34" y1="34" x2="84" y2="84" stroke="#6b82ff" strokeWidth="1.5" opacity="0.25" />
+      <line x1="166" y1="34" x2="116" y2="84" stroke="#6b82ff" strokeWidth="1.5" opacity="0.25" />
+      <line x1="34" y1="166" x2="84" y2="116" stroke="#6b82ff" strokeWidth="1.5" opacity="0.25" />
+      <line x1="166" y1="166" x2="116" y2="116" stroke="#6b82ff" strokeWidth="1.5" opacity="0.25" />
+      <rect x="82" y="82" width="36" height="36" stroke="#6b82ff" strokeWidth="1.5" fill="none" opacity="0.35" />
+      <circle cx="34" cy="34" r="22" stroke="#6b82ff" strokeWidth="0.8" opacity="0.2" />
+      <circle cx="166" cy="34" r="22" stroke="#6b82ff" strokeWidth="0.8" opacity="0.2" />
+      <circle cx="34" cy="166" r="22" stroke="#6b82ff" strokeWidth="0.8" opacity="0.2" />
+      <circle cx="166" cy="166" r="22" stroke="#6b82ff" strokeWidth="0.8" opacity="0.2" />
+      <circle cx="34" cy="34" r="2" fill="#6b82ff" opacity="0.35" />
+      <circle cx="166" cy="34" r="2" fill="#6b82ff" opacity="0.35" />
+      <circle cx="34" cy="166" r="2" fill="#6b82ff" opacity="0.35" />
+      <circle cx="166" cy="166" r="2" fill="#6b82ff" opacity="0.35" />
+      <circle cx="100" cy="100" r="40" stroke="#6b82ff" strokeWidth="0.5" opacity="0">
+        <animate attributeName="r" from="40" to="96" dur="3s" repeatCount="indefinite" />
+        <animate attributeName="opacity" from="0.15" to="0" dur="3s" repeatCount="indefinite" />
+      </circle>
+      <circle cx="100" cy="100" r="40" stroke="#6b82ff" strokeWidth="0.5" opacity="0">
+        <animate attributeName="r" from="40" to="96" dur="3s" begin="1s" repeatCount="indefinite" />
+        <animate attributeName="opacity" from="0.15" to="0" dur="3s" begin="1s" repeatCount="indefinite" />
+      </circle>
+      <circle cx="100" cy="100" r="40" stroke="#6b82ff" strokeWidth="0.5" opacity="0">
+        <animate attributeName="r" from="40" to="96" dur="3s" begin="2s" repeatCount="indefinite" />
+        <animate attributeName="opacity" from="0.15" to="0" dur="3s" begin="2s" repeatCount="indefinite" />
+      </circle>
+      <text x="100" y="196" fill="#cfd2e3" fontSize="7" fontFamily="monospace" textAnchor="middle" opacity="0.15">
+        MAVLink v2
+      </text>
+    </svg>
+  );
+}
+
+function FpgaVisual() {
+  return (
+    <svg viewBox="0 0 400 130" fill="none" className="w-full" preserveAspectRatio="xMidYMid meet">
+      <line x1="0" y1="30" x2="400" y2="30" stroke="#6b82ff" strokeWidth="0.3" opacity="0.07" />
+      <line x1="0" y1="60" x2="400" y2="60" stroke="#6b82ff" strokeWidth="0.3" opacity="0.07" />
+      <line x1="0" y1="90" x2="400" y2="90" stroke="#6b82ff" strokeWidth="0.3" opacity="0.07" />
+      <polyline
+        className="power-trace"
+        style={{ strokeDasharray: 1200, strokeDashoffset: 1200 }}
+        points="0,60 10,61 20,59 30,60 40,61 50,60 60,58 65,55 70,18 73,80 76,22 79,75 82,28 85,70 88,55 93,58 100,60 110,61 120,59 130,60 140,61 150,60 155,58 160,55 165,20 168,78 171,24 174,73 177,30 180,68 183,55 188,58 195,60 205,61 215,59 225,60 235,61 245,60 250,58 255,55 260,22 263,76 266,26 269,72 272,32 275,66 278,55 283,58 290,60 300,61 310,59 320,60 330,61 340,58 345,55 350,19 353,79 356,23 359,74 362,29 365,69 368,55 373,58 380,60 390,61 400,60"
+        stroke="#6b82ff"
+        strokeWidth="1.2"
+        opacity="0.5"
+      />
+      <text className="key-anno" x="76" y="108" fill="#dc4242" fontSize="7" fontFamily="monospace" opacity="0">0x4F</text>
+      <text className="key-anno" x="171" y="108" fill="#dc4242" fontSize="7" fontFamily="monospace" opacity="0">0x68</text>
+      <text className="key-anno" x="266" y="108" fill="#dc4242" fontSize="7" fontFamily="monospace" opacity="0">0xE8</text>
+      <text className="key-anno" x="359" y="108" fill="#dc4242" fontSize="7" fontFamily="monospace" opacity="0">0xA1</text>
+      <line x1="0" y1="0" x2="0" y2="130" stroke="#6b82ff" strokeWidth="1" opacity="0.2">
+        <animate attributeName="x1" from="0" to="400" dur="4s" repeatCount="indefinite" />
+        <animate attributeName="x2" from="0" to="400" dur="4s" repeatCount="indefinite" />
+      </line>
+      <text x="0" y="126" fill="#cfd2e3" fontSize="6" fontFamily="monospace" opacity="0.1">power (mW)</text>
+      <text x="375" y="126" fill="#cfd2e3" fontSize="6" fontFamily="monospace" opacity="0.1">time</text>
+    </svg>
+  );
+}
+
+/* ── Mode data ───────────────────────────────────────── */
+const MODES = [
   {
-    name: "SOURCE CODE",
-    desc: "Deep static analysis. Injection, auth bypass, hardcoded secrets, logic flaws. Rem reads every file she deems relevant.",
-    tags: "static \u00b7 secrets \u00b7 logic \u00b7 auth",
+    id: "oss",
+    cmd: "oss",
+    tagline: "every line, every path, every secret",
+    desc: "Full source tree analysis. Rem traces data flows through your codebase \u2014 injection points, auth bypasses, hardcoded credentials, dangerous crypto. Every file she deems relevant gets read and analyzed.",
   },
   {
-    name: "WEB APPS",
-    desc: "Browser-based pentesting with full page interaction. XSS, CSRF, SSRF, IDOR, broken auth. Rem navigates like a human.",
-    tags: "xss \u00b7 csrf \u00b7 ssrf \u00b7 idor",
+    id: "web",
+    cmd: "web",
+    tagline: "your browser, her weapon",
+    desc: "Rem takes the wheel of a headless browser and attacks your web app like a human pentester. She navigates pages, fills forms, injects payloads, and discovers XSS, CSRF, SSRF, IDOR \u2014 the full OWASP top 10.",
   },
   {
-    name: "HARDWARE",
-    desc: "ESP32, drones, serial protocols. Firmware extraction and protocol fuzzing over UART, SPI, I2C via gateway.",
-    tags: "uart \u00b7 spi \u00b7 i2c \u00b7 firmware",
+    id: "hardware",
+    cmd: "hardware",
+    tagline: "intercept the signal, own the sky",
+    desc: "Connect a drone, ESP32, or any device via gateway. Rem extracts firmware, fuzzes MAVLink and serial protocols, and probes for radio vulnerabilities. Full flight controller analysis from a sandboxed environment.",
   },
   {
-    name: "FPGA",
-    desc: "Side-channel analysis, voltage glitching, timing attacks. Extract secrets from hardware implementations.",
-    tags: "sca \u00b7 glitch \u00b7 timing \u00b7 dpa",
+    id: "fpga",
+    cmd: "fpga",
+    tagline: "your power trace betrays your key",
+    desc: "Side-channel attacks on hardware crypto. Rem monitors power consumption during AES-256 operations, applies differential power analysis, and extracts the full encryption key byte by byte.",
   },
 ];
+
+const MODE_VISUAL: Record<string, React.ReactNode> = {
+  oss: <OssVisual />,
+  web: <WebVisual />,
+  hardware: <DroneVisual />,
+  fpga: <FpgaVisual />,
+};
+
+/* ── Main component ──────────────────────────────────── */
 
 export function LandingContent() {
   const root = useRef<HTMLDivElement>(null);
@@ -64,7 +214,6 @@ export function LandingContent() {
     setMounted(true);
   }, []);
 
-  /* ── Scroll-triggered animations ───────────────────── */
   const setupScrollAnimations = useCallback(
     async (rootEl: HTMLDivElement) => {
       const { animate, stagger } = await import("animejs");
@@ -96,17 +245,34 @@ export function LandingContent() {
               }
             }
 
-            if (id === "surfaces") {
-              const rows = entry.target.querySelectorAll(".surface-row");
-              rows.forEach((row, i) => {
-                animate(row, {
-                  opacity: [0, 1],
-                  translateY: ["3rem", "0rem"],
-                  delay: i * 200,
-                  duration: 1000,
-                  ease: "outExpo",
-                });
+            // Each mode panel animates individually
+            if (id?.startsWith("mode-")) {
+              animate(entry.target, {
+                opacity: [0, 1],
+                translateY: ["2rem", "0rem"],
+                duration: 1000,
+                ease: "outExpo",
               });
+
+              // FPGA: draw the power trace
+              if (id === "mode-fpga") {
+                const trace = entry.target.querySelector(".power-trace");
+                if (trace) {
+                  animate(trace, {
+                    strokeDashoffset: [1200, 0],
+                    delay: 500,
+                    duration: 2500,
+                    ease: "outQuart",
+                  });
+                }
+                animate(entry.target.querySelectorAll(".key-anno"), {
+                  opacity: [0, 1],
+                  translateY: [4, 0],
+                  delay: stagger(200, { start: 2800 }),
+                  duration: 600,
+                  ease: "outQuart",
+                });
+              }
             }
 
             if (id === "closing") {
@@ -135,7 +301,6 @@ export function LandingContent() {
     []
   );
 
-  /* ── Hero entrance ─────────────────────────────────── */
   useEffect(() => {
     if (!mounted || !root.current) return;
 
@@ -173,11 +338,11 @@ export function LandingContent() {
   }, [mounted, setupScrollAnimations]);
 
   return (
-    <div ref={root} className="flex min-h-screen flex-col overflow-x-hidden">
+    <div ref={root} className="flex min-h-dvh flex-col overflow-x-hidden">
       {/* ═══ HERO ═══════════════════════════════════════ */}
       <section
         data-section="hero"
-        className="relative min-h-screen flex flex-col"
+        className="relative min-h-dvh flex flex-col"
       >
         {mounted && (
           <div className="absolute inset-0 z-0 overflow-hidden">
@@ -194,7 +359,7 @@ export function LandingContent() {
           </div>
         )}
 
-        <header className="relative z-10 px-8 h-11 flex items-center justify-between border-b border-border mt-[2px]">
+        <header className="relative z-10 px-6 sm:px-8 h-11 flex items-center justify-between border-b border-border mt-[2px]">
           <span className="text-sm">
             <span className="font-semibold">re</span>
             <span className="text-destructive font-semibold">:</span>
@@ -207,8 +372,8 @@ export function LandingContent() {
           </SignInButton>
         </header>
 
-        <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-8 pb-16">
-          <div className="hero-gif-wrap relative w-full max-w-[720px] aspect-[500/281] mb-12 opacity-0">
+        <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 sm:px-8 pb-16">
+          <div className="hero-gif-wrap relative w-full max-w-[720px] aspect-[500/281] mb-10 sm:mb-12 opacity-0">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/rem-hero.gif"
@@ -241,11 +406,11 @@ export function LandingContent() {
             <span>zero</span>
           </h1>
 
-          <p className="hero-tagline text-lg text-muted-foreground mt-6 text-center max-w-md leading-relaxed opacity-0">
+          <p className="hero-tagline text-base sm:text-lg text-muted-foreground mt-5 sm:mt-6 text-center max-w-md leading-relaxed opacity-0">
             deploy Rem to red team any attack surface.
           </p>
 
-          <div className="hero-cta mt-10 flex flex-col items-center gap-3 opacity-0">
+          <div className="hero-cta mt-8 sm:mt-10 flex flex-col items-center gap-3 opacity-0">
             <SignInButton mode="modal">
               <button className="text-sm bg-rem text-white px-8 py-3 hover:brightness-110 transition-all duration-150 active:translate-y-px">
                 deploy Rem
@@ -262,10 +427,16 @@ export function LandingContent() {
         </div>
       </section>
 
-      {/* ═══ DARK ZONE — terminal + surfaces ═══════════ */}
-      <div className="relative bg-[#0c0e1a] border-y border-[#222645]">
+      {/* ── Transition: light → dark ─────────────────── */}
+      <div
+        className="h-12 sm:h-20"
+        style={{ background: "linear-gradient(to bottom, #f7f7fc, #0c0e1a)" }}
+      />
+
+      {/* ═══ DARK ZONE ═════════════════════════════════ */}
+      <div className="relative bg-[#0c0e1a]">
         {mounted && (
-          <div className="absolute inset-0 z-0 overflow-hidden">
+          <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
             <Dithering
               colorBack="#0c0e1a"
               colorFront="#4f68e8"
@@ -282,9 +453,9 @@ export function LandingContent() {
         {/* ── Terminal ─────────────────────────────── */}
         <section
           data-section="terminal"
-          className="relative z-10 max-w-4xl mx-auto px-8 pt-20 pb-16"
+          className="relative z-10 max-w-4xl mx-auto px-6 sm:px-8 pt-16 sm:pt-24 pb-16"
         >
-          <div className="flex items-center gap-2.5 mb-10">
+          <div className="flex items-center gap-2.5 mb-8 sm:mb-10">
             <div className="w-[7px] h-[7px] rounded-full bg-[#c53528]/60" />
             <div className="w-[7px] h-[7px] rounded-full bg-[#c5a028]/60" />
             <div className="w-[7px] h-[7px] rounded-full bg-[#28c55a]/60" />
@@ -293,7 +464,7 @@ export function LandingContent() {
             </span>
           </div>
 
-          <div className="font-mono text-[13px] leading-[1.9] overflow-x-auto">
+          <div className="font-mono text-[12px] sm:text-[13px] leading-[1.9] overflow-x-auto">
             {SCAN_LINES.map((line, i) => (
               <div
                 key={i}
@@ -322,33 +493,37 @@ export function LandingContent() {
           </div>
         </section>
 
-        {/* ── Attack surfaces ──────────────────────── */}
-        <section
-          data-section="surfaces"
-          className="relative z-10 border-t border-[#222645] px-8 pb-20 pt-16"
-        >
-          <div className="max-w-5xl mx-auto">
+        {/* ── Attack modes ─────────────────────────── */}
+        <section className="relative z-10 border-t border-[#222645] px-6 sm:px-8 pb-16 sm:pb-24 pt-16 sm:pt-20">
+          <div className="max-w-6xl mx-auto">
             <span className="text-[11px] text-[#cfd2e3]/15 font-mono tracking-widest uppercase">
-              Attack surfaces
+              Attack modes
             </span>
 
-            <div className="mt-14">
-              {SURFACES.map((s) => (
+            <div className="mt-12 sm:mt-16 space-y-16 sm:space-y-28">
+              {MODES.map((m, i) => (
                 <div
-                  key={s.name}
-                  className="surface-row opacity-0 border-t border-[#222645] py-10 sm:py-14 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 sm:gap-12"
+                  key={m.id}
+                  data-section={`mode-${m.id}`}
+                  className={`mode-panel opacity-0 flex flex-col ${
+                    i % 2 === 1 ? "lg:flex-row-reverse" : "lg:flex-row"
+                  } gap-8 sm:gap-10 lg:gap-16 items-center`}
                 >
-                  <div>
-                    <h3 className="text-[clamp(2.5rem,9vw,6.5rem)] font-semibold tracking-tighter leading-none text-[#6b82ff]/15">
-                      {s.name}
-                    </h3>
-                    <span className="text-[11px] text-[#cfd2e3]/15 font-mono mt-3 inline-block">
-                      {s.tags}
-                    </span>
+                  <div className="w-full lg:w-2/5 shrink-0">
+                    {MODE_VISUAL[m.id]}
                   </div>
-                  <p className="text-[13px] text-[#cfd2e3]/35 leading-relaxed max-w-sm sm:text-right sm:pb-2">
-                    {s.desc}
-                  </p>
+                  <div className="w-full lg:w-3/5">
+                    <h3 className="font-mono text-[13px] sm:text-[15px] text-white/80">
+                      $ rem --mode{" "}
+                      <span className="text-[#6b82ff]">{m.cmd}</span>
+                    </h3>
+                    <p className="text-[12px] sm:text-[13px] text-[#cfd2e3]/25 mt-2 italic">
+                      {m.tagline}
+                    </p>
+                    <p className="text-[13px] text-[#cfd2e3]/40 mt-5 leading-relaxed max-w-md">
+                      {m.desc}
+                    </p>
+                  </div>
                 </div>
               ))}
             </div>
@@ -356,8 +531,17 @@ export function LandingContent() {
         </section>
       </div>
 
+      {/* ── Transition: dark → light ─────────────────── */}
+      <div
+        className="h-12 sm:h-20"
+        style={{ background: "linear-gradient(to bottom, #0c0e1a, #f7f7fc)" }}
+      />
+
       {/* ═══ CLOSING ═══════════════════════════════════ */}
-      <section data-section="closing" className="relative overflow-hidden">
+      <section
+        data-section="closing"
+        className="relative overflow-hidden"
+      >
         {mounted && (
           <div className="absolute inset-0 z-0">
             <Dithering
@@ -373,7 +557,7 @@ export function LandingContent() {
           </div>
         )}
 
-        <div className="close-inner relative z-10 flex flex-col items-center py-32 gap-8 opacity-0">
+        <div className="close-inner relative z-10 flex flex-col items-center py-24 sm:py-32 gap-8 opacity-0">
           <span className="text-[11px] text-muted-foreground/30 font-mono tracking-widest">
             OPUS 4.6 &middot; GLM-4.7V &middot; NEMOTRON
           </span>
@@ -396,7 +580,7 @@ export function LandingContent() {
         </div>
       </section>
 
-      <footer className="px-8 h-14 flex items-center border-t border-border">
+      <footer className="px-6 sm:px-8 h-14 flex items-center border-t border-border">
         <span className="text-xs text-muted-foreground">return from zero</span>
       </footer>
     </div>
