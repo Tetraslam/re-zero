@@ -99,8 +99,8 @@ export function LandingContent() {
         {mounted && (
           <div className="absolute inset-0 z-0 overflow-hidden">
             <Dithering
-              colorBack="var(--color-background, #f7f7fc)"
-              colorFront="var(--color-rem, #4f68e8)"
+              colorBack="#f7f7fc"
+              colorFront="#4f68e8"
               shape="simplex"
               type="4x4"
               size={2}
@@ -109,7 +109,7 @@ export function LandingContent() {
               style={{
                 width: "100%",
                 height: "100%",
-                opacity: 0.04,
+                opacity: 0.12,
               }}
             />
           </div>
@@ -144,16 +144,16 @@ export function LandingContent() {
             {mounted && (
               <div
                 className="absolute inset-0 pointer-events-none"
-                style={{ mixBlendMode: "overlay", opacity: 0.12 }}
+                style={{ mixBlendMode: "overlay", opacity: 0.25 }}
               >
                 <Dithering
                   colorBack="#000000"
                   colorFront="#ffffff"
                   shape="simplex"
                   type="4x4"
-                  size={2}
+                  size={3}
                   speed={0.2}
-                  scale={1.2}
+                  scale={1.0}
                   style={{ width: "100%", height: "100%" }}
                 />
               </div>
