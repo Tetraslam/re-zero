@@ -1,4 +1,4 @@
-set_property SRC_FILE_INFO {cfile:/home/willi/coding/fun/re-zero/hardware/fpga/xdc/genesys2.xdc rfile:../xdc/genesys2.xdc id:1} [current_design]
+set_property SRC_FILE_INFO {cfile:/root/fpga/xdc/genesys2.xdc rfile:../xdc/genesys2.xdc id:1} [current_design]
 set_property src_info {type:XDC file:1 line:4 export:INPUT save:INPUT read:READ} [current_design]
 set_property -dict { PACKAGE_PIN AD12 IOSTANDARD LVDS } [get_ports { sysclk_p }]
 set_property src_info {type:XDC file:1 line:5 export:INPUT save:INPUT read:READ} [current_design]
@@ -50,9 +50,9 @@ set_property -dict { PACKAGE_PIN P26  IOSTANDARD LVCMOS33 } [get_ports { sw[6] }
 set_property src_info {type:XDC file:1 line:60 export:INPUT save:INPUT read:READ} [current_design]
 set_property -dict { PACKAGE_PIN P27  IOSTANDARD LVCMOS33 } [get_ports { sw[7] }]; #IO_25_15 Sch=sw[7]
 set_property src_info {type:XDC file:1 line:67 export:INPUT save:INPUT read:READ} [current_design]
-set_property -dict { PACKAGE_PIN T22 IOSTANDARD LVCMOS33 } [get_ports { esp_clk_gpio }];  # JA1_P
+set_property -dict { PACKAGE_PIN U27 IOSTANDARD LVCMOS33 } [get_ports { esp_clk_gpio }];  # JA1_P
 set_property src_info {type:XDC file:1 line:69 export:INPUT save:INPUT read:READ} [current_design]
-set_property -dict { PACKAGE_PIN T23 IOSTANDARD LVCMOS33 } [get_ports { esp_trigger_gpio }];  # JC1
+set_property -dict { PACKAGE_PIN U28 IOSTANDARD LVCMOS33 } [get_ports { esp_trigger_gpio }];  # JC1
 set_property src_info {type:XDC file:1 line:105 export:INPUT save:INPUT read:READ} [current_design]
 set_property -dict { PACKAGE_PIN AB20 IOSTANDARD TMDS_33 } [get_ports {hdmi_clk_n}]
 set_property src_info {type:XDC file:1 line:106 export:INPUT save:INPUT read:READ} [current_design]

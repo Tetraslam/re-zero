@@ -9,11 +9,11 @@ services:
     mac_address: '76:04:0a:69:a4:38'
     tty: true
     stdin_open: true
-    working_dir: /root
+    working_dir: /root/fpga
     command: ['bash']
     volumes:
-      - ${HOME}/Downloads:/root/Downloads
-      - ${HOME}/downloads:/root/downloads
+      - ${HOME}/Downloads:/root/Downloads:cached
+      - ${HOME}/Desktop/re-zero/hardware/fpga:/root/fpga
       - vivado_opt:/tools/Xilinx
 
 volumes:

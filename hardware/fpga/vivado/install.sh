@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
+DIR="$(realpath "$(dirname "$0" )" )"
+cd $DIR
 
 # ~/code/vivado/vivado_2025.1/install.sh
-cd ~/code/vivado/vivado_2025.1
+# cd ~/code/vivado/vivado_2025.1
+cd ${HOME}/Downloads
 
 mkdir -p ${HOME}/vivado_2025.1
 time (tar -xf FPGAs_AdaptiveSoCs_Unified_SDI_2025.1_0530_0145.tar -C ${HOME}/vivado_2025.1)
