@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     convex_deploy_key: str = ""
     modal_token_id: str = ""
     modal_token_secret: str = ""
+    frontend_url: str = "http://localhost:3000"
 
     model_config = {"env_file": ".env"}
 

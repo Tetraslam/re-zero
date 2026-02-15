@@ -20,7 +20,8 @@ export const push = mutation({
       v.literal("tool_result"),
       v.literal("reasoning"),
       v.literal("observation"),
-      v.literal("report")
+      v.literal("report"),
+      v.literal("human_input_request")
     ),
     payload: v.any(),
   },

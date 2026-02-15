@@ -38,6 +38,7 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-rem: var(--rem);
   --radius-sm: var(--radius);
   --radius-md: var(--radius);
   --radius-lg: var(--radius);
@@ -48,85 +49,89 @@
 }
 
 /*
- * re:zero — warm monochrome + red accent
+ * re:zero — midnight navy + rem blue + red
  *
- * The palette has subtle warmth (cream/sepia tones instead of pure gray).
- * One accent color: muted red, connecting to "red team."
- * Used only for critical severity, active states, and the brand mark.
+ * Navy base: the void, the zero, late-night security work.
+ * Rem blue: the agent's color (from anime). Active states, intelligence, analysis.
+ * Red: danger, vulnerabilities, severity. The things Rem finds.
+ *
+ * Blue agent finds red vulnerabilities in the dark.
  */
 
 :root {
   --radius: 1px;
 
-  --background: #f7f5f2;
-  --foreground: #1a1815;
-  --card: #f7f5f2;
-  --card-foreground: #1a1815;
+  --background: #f7f7fc;
+  --foreground: #111428;
+  --card: #f2f2f9;
+  --card-foreground: #111428;
   --popover: #ffffff;
-  --popover-foreground: #1a1815;
-  --primary: #1a1815;
-  --primary-foreground: #f7f5f2;
-  --secondary: #edeae5;
-  --secondary-foreground: #1a1815;
-  --muted: #edeae5;
-  --muted-foreground: #7a756e;
-  --accent: #e8e5df;
-  --accent-foreground: #1a1815;
-  --destructive: #b5392b;
-  --border: #ddd9d3;
-  --input: #ddd9d3;
-  --ring: #1a1815;
+  --popover-foreground: #111428;
+  --primary: #111428;
+  --primary-foreground: #f7f7fc;
+  --secondary: #ececf5;
+  --secondary-foreground: #111428;
+  --muted: #ececf5;
+  --muted-foreground: #6c6f8e;
+  --accent: #e4e5f0;
+  --accent-foreground: #111428;
+  --destructive: #c53528;
+  --rem: #4f68e8;
+  --border: #d6d8e6;
+  --input: #d6d8e6;
+  --ring: #4f68e8;
 
-  --chart-1: #1a1815;
-  --chart-2: #7a756e;
-  --chart-3: #a09a93;
-  --chart-4: #c5c0b9;
-  --chart-5: #ddd9d3;
+  --chart-1: #111428;
+  --chart-2: #4f68e8;
+  --chart-3: #6c6f8e;
+  --chart-4: #b0b3cc;
+  --chart-5: #d6d8e6;
 
-  --sidebar: #f7f5f2;
-  --sidebar-foreground: #1a1815;
-  --sidebar-primary: #1a1815;
-  --sidebar-primary-foreground: #f7f5f2;
-  --sidebar-accent: #e8e5df;
-  --sidebar-accent-foreground: #1a1815;
-  --sidebar-border: #ddd9d3;
-  --sidebar-ring: #1a1815;
+  --sidebar: #f2f2f9;
+  --sidebar-foreground: #111428;
+  --sidebar-primary: #111428;
+  --sidebar-primary-foreground: #f7f7fc;
+  --sidebar-accent: #e4e5f0;
+  --sidebar-accent-foreground: #111428;
+  --sidebar-border: #d6d8e6;
+  --sidebar-ring: #4f68e8;
 }
 
 .dark {
-  --background: #0e0d0c;
-  --foreground: #e8e4de;
-  --card: #131211;
-  --card-foreground: #e8e4de;
-  --popover: #171615;
-  --popover-foreground: #e8e4de;
-  --primary: #e8e4de;
-  --primary-foreground: #0e0d0c;
-  --secondary: #1c1b19;
-  --secondary-foreground: #e8e4de;
-  --muted: #1c1b19;
-  --muted-foreground: #7a756e;
-  --accent: #211f1d;
-  --accent-foreground: #e8e4de;
-  --destructive: #c94a3a;
-  --border: #2a2826;
-  --input: #2a2826;
-  --ring: #e8e4de;
+  --background: #0c0e1a;
+  --foreground: #e8eaf3;
+  --card: #141730;
+  --card-foreground: #e8eaf3;
+  --popover: #15182e;
+  --popover-foreground: #e8eaf3;
+  --primary: #e8eaf3;
+  --primary-foreground: #0c0e1a;
+  --secondary: #1a1e38;
+  --secondary-foreground: #e8eaf3;
+  --muted: #1a1e38;
+  --muted-foreground: #8890b5;
+  --accent: #1f244a;
+  --accent-foreground: #e8eaf3;
+  --destructive: #ef4444;
+  --rem: #6b82ff;
+  --border: #2d3158;
+  --input: #2d3158;
+  --ring: #6b82ff;
 
-  --chart-1: #e8e4de;
-  --chart-2: #7a756e;
-  --chart-3: #5a5650;
-  --chart-4: #3a3835;
-  --chart-5: #2a2826;
+  --chart-1: #e8eaf3;
+  --chart-2: #6b82ff;
+  --chart-3: #8890b5;
+  --chart-4: #3d4270;
+  --chart-5: #2d3158;
 
-  --sidebar: #0e0d0c;
-  --sidebar-foreground: #e8e4de;
-  --sidebar-primary: #e8e4de;
-  --sidebar-primary-foreground: #0e0d0c;
-  --sidebar-accent: #211f1d;
-  --sidebar-accent-foreground: #e8e4de;
-  --sidebar-border: #2a2826;
-  --sidebar-ring: #e8e4de;
+  --sidebar: #0c0e1a;
+  --sidebar-foreground: #e8eaf3;
+  --sidebar-primary: #e8eaf3;
+  --sidebar-primary-foreground: #0c0e1a;
+  --sidebar-accent: #1f244a;
+  --sidebar-accent-foreground: #e8eaf3;
+  --sidebar-border: #2d3158;
+  --sidebar-ring: #6b82ff;
 }
 
 @layer base {
@@ -151,9 +156,30 @@
     z-index: 50;
   }
 
+  /* Pulse the brand line in rem blue when a scan is running */
+  body.scanning::before {
+    background: var(--rem);
+    animation: brandPulse 2s ease-in-out infinite;
+  }
+
+  /* Film grain / CRT noise texture overlay */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: -50%;
+    width: 200%;
+    height: 200%;
+    pointer-events: none;
+    z-index: 9998;
+    opacity: 0.04;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    animation: grain 8s steps(10) infinite;
+  }
+
   ::selection {
-    background: var(--foreground);
-    color: var(--background);
+    background: var(--rem);
+    color: white;
   }
 
   ::-webkit-scrollbar {
@@ -167,6 +193,62 @@
     background: var(--border);
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: var(--muted-foreground);
+    background: var(--rem);
+  }
+}
+
+/* --- Keyframes --- */
+
+@keyframes grain {
+  0%, 100% { transform: translate(0, 0); }
+  10% { transform: translate(-5%, -10%); }
+  20% { transform: translate(-15%, 5%); }
+  30% { transform: translate(7%, -25%); }
+  40% { transform: translate(-5%, 25%); }
+  50% { transform: translate(-15%, 10%); }
+  60% { transform: translate(15%, 0%); }
+  70% { transform: translate(0%, 15%); }
+  80% { transform: translate(3%, 35%); }
+  90% { transform: translate(-10%, 10%); }
+}
+
+@keyframes brandPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.15; }
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+/* Utility classes for animations */
+@layer utilities {
+  .animate-blink {
+    animation: blink 1s step-end infinite;
+  }
+
+  .animate-fade-slide-in {
+    animation: fadeSlideIn 0.3s ease-out both;
+  }
+
+  .animate-brand-pulse {
+    animation: brandPulse 2s ease-in-out infinite;
   }
 }

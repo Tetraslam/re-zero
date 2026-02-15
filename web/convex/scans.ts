@@ -37,6 +37,38 @@ export const create = mutation({
   },
 });
 
+export const generateShareToken = mutation({
+  args: { scanId: v.id("scans") },
+  handler: async (ctx, args) => {
+    const scan = await ctx.db.get(args.scanId);
+    if (!scan) throw new Error("Scan not found");
+    if (scan.shareToken) return scan.shareToken;
+    const token = Array.from(crypto.getRandomValues(new Uint8Array(16)))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+    await ctx.db.patch(args.scanId, { shareToken: token });
+    return token;
+  },
+});
+
+export const revokeShareToken = mutation({
+  args: { scanId: v.id("scans") },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.scanId, { shareToken: undefined });
+  },
+});
+
+export const getByShareToken = query({
+  args: { token: v.string() },
+  handler: async (ctx, args) => {
+    const scans = await ctx.db
+      .query("scans")
+      .withIndex("by_share_token", (q) => q.eq("shareToken", args.token))
+      .collect();
+    return scans[0] ?? null;
+  },
+});
+
 export const updateStatus = mutation({
   args: {
     scanId: v.id("scans"),

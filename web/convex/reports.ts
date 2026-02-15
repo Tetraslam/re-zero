@@ -28,6 +28,7 @@ export const submit = mutation({
     projectId: v.id("projects"),
     findings: v.array(
       v.object({
+        id: v.optional(v.string()),
         title: v.string(),
         severity: v.union(
           v.literal("critical"),
@@ -39,6 +40,7 @@ export const submit = mutation({
         description: v.string(),
         location: v.optional(v.string()),
         recommendation: v.optional(v.string()),
+        codeSnippet: v.optional(v.string()),
       })
     ),
     summary: v.optional(v.string()),

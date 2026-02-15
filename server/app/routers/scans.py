@@ -61,12 +61,24 @@ async def _launch_scan(req: StartScanRequest):
             )
 
         elif req.target_type == "web":
-            # TODO: Web pentesting sandbox
-            await convex_mutation("actions:push", {
-                "scanId": req.scan_id,
-                "type": "observation",
-                "payload": "Web pentesting agent not yet implemented.",
-            })
+            target_url = req.target_config.get("url", "")
+            if not target_url:
+                raise ValueError("Missing url in target config")
+
+            test_account = req.target_config.get("testAccount")
+            user_context = req.target_config.get("context")
+
+            run_web_scan = modal.Function.from_name("re-zero-sandbox", "run_web_scan")
+            await run_web_scan.remote.aio(
+                scan_id=req.scan_id,
+                project_id=req.project_id,
+                target_url=target_url,
+                test_account=test_account,
+                user_context=user_context,
+                agent=req.agent,
+                convex_url=settings.convex_url,
+                convex_deploy_key=settings.convex_deploy_key,
+            )
 
         elif req.target_type in ("hardware", "fpga"):
             # TODO: Hardware/FPGA gateway integration

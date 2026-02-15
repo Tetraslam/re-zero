@@ -42,6 +42,16 @@ export const create = mutation({
   },
 });
 
+export const updateTargetConfig = mutation({
+  args: {
+    projectId: v.id("projects"),
+    targetConfig: v.any(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.projectId, { targetConfig: args.targetConfig });
+  },
+});
+
 export const archive = mutation({
   args: { projectId: v.id("projects") },
   handler: async (ctx, args) => {
