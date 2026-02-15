@@ -1,0 +1,111 @@
+MX BRIO RAW REGISTER DUMP
+046D:0944 | Serial: 2527LVV0U2L8 | Sony IMX415 (1/2.8")
+
+================================================================================
+USB INTERFACES
+================================================================================
+0  UVC Video Control       bInterfaceClass=14  SubClass=1
+1  UVC Video Streaming     bInterfaceClass=14  SubClass=2
+2  HID (vendor+LED+tel)    bInterfaceClass=3
+3  Vendor Specific          bInterfaceClass=255 SubClass=255  UNCLAIMED
+4  USB Audio Control        bInterfaceClass=1   SubClass=1
+5  USB Audio Streaming      bInterfaceClass=1   SubClass=2
+
+================================================================================
+HID REPORT MAP (Interface 2, 246-byte descriptor)
+================================================================================
+ID    TYPE           USAGE PAGE  SIZE     DESCRIPTION
+0x08  input+output   0x000B      2 bits   Telephony: Phone Mute (in), Hook Switch (in), Mute LED (out), Line (out)
+0x40  input          0xFF00      2 bits   Vendor status flags
+0x41  output         0xFF00      2 bytes  Vendor control (writable)
+0x42  input          0xFF00      2 bytes  Vendor data
+0x43  input          0xFF00      2 bytes  Vendor data
+0x44  output         0xFF00      4 bytes  Vendor control (writable)
+0x45  input          0xFF00      1 byte   Vendor data
+0x46  input          0xFF00      2 bytes  Vendor data
+0x47  input          0xFF00      2 bytes  Vendor data
+0x0A  input          0xFF01      31 bytes Vendor data blob
+0x01  input          0xFF02      1 byte   Button
+0x55  input          0xFFA1      6 bytes  Logitech proprietary
+0x9A  feature        0xFF99      31 bytes Logitech register interface (read/write)
+
+================================================================================
+HID FEATURE REPORT 0x9A - FUNCTION CODE SCAN
+================================================================================
+Payload format: [9A, FUNC, 00, 00, 00x28]
+Response: 64 bytes from get_feature_report(0x9A, 64)
+Byte layout: [9A, FUNC_ECHO, ??, DATA0, DATA1, 00...]
+
+FUNC  DATA BYTES (3-4)  NOTES
+0x00  01 01             Firmware version 1.1
+0x10  01 27             Value 39 decimal (hardware revision or sensor config)
+0x01-0x0F  00 00        Empty (byte[1] echoes upper nibble of func code)
+0x11-0xFF  00 00        Empty (byte[1] echoes upper nibble of func code)
+
+Only 2 registers return non-zero data: 0x00 and 0x10.
+Byte[1] always echoes back the upper nibble of the function code sent.
+
+================================================================================
+HID OUTPUT REPORT WRITES
+================================================================================
+REPORT  DATA        RESULT
+0x08    [00]        LED off                     ACCEPTED
+0x08    [01]        Mute LED on (bit 0)         ACCEPTED
+0x08    [02]        Line indicator on (bit 1)   ACCEPTED
+0x08    [03]        Both LEDs on (bits 0+1)     ACCEPTED
+0x41    [00, 00]    Vendor output zeros          ACCEPTED (no visible effect)
+0x41    [FF, FF]    Vendor output 0xFF           ACCEPTED (no visible effect)
+0x44    [00,00,00,00]  Vendor output zeros       ACCEPTED (no visible effect)
+0x44    [FF,FF,FF,FF]  Vendor output 0xFF        ACCEPTED (no visible effect)
+
+================================================================================
+UVC CONTROL PROBE (via IOKit, first-run data)
+================================================================================
+
+UNIT 1 - CAMERA TERMINAL
+CONTROL                   CUR       MIN       MAX       DEFAULT
+ae_mode                   8         -         -         -
+ae_priority               0         -         -         -
+exposure_time_abs         156       3         2047      -
+focus_abs                 0         0         255       -
+focus_auto                1         0         1         -
+zoom_abs                  100       100       400       -
+
+UNIT 3 - PROCESSING UNIT
+CONTROL                   CUR       MIN       MAX       DEFAULT
+backlight_comp            1         0         1         -
+brightness                128       0         255       -
+contrast                  128       0         255       -
+gain                      0         0         255       -
+power_line_freq           2         1         2         -
+saturation                128       0         255       -
+sharpness                 128       0         255       -
+wb_temperature            5000      2800      7500      -
+wb_temperature_auto       1         -         -         -
+
+UNIT 2 - EXTENSION UNIT (garbage/echo data, not a real control unit)
+UNIT 6 - RESPONDS (all zeros, likely another extension unit)
+
+NOT SUPPORTED BY FIRMWARE: hue, gamma
+
+================================================================================
+AVFOUNDATION CAMERA FORMATS
+================================================================================
+160x120   320x180   320x240   424x240   640x360   640x480
+848x480   960x540   1024x576  1280x720  1280x960  1600x900
+1920x1080 2560x1440 3840x2160
+Multiple pixel formats per resolution (420v, 420f, yuvs, 2vuy)
+
+================================================================================
+CONFIRMED CAPABILITIES
+================================================================================
+LED mute control:     Report 0x08 bit 0 = Mute LED on/off
+LED line control:     Report 0x08 bit 1 = Line indicator on/off
+Register read:        Report 0x9A feature report, 2 live registers (0x00, 0x10)
+Vendor output:        Reports 0x41 (2B) and 0x44 (4B) accept writes, function unknown
+Resolution switch:    AVFoundation format switching works (160x120 to 3840x2160)
+UVC image controls:   Brightness, contrast, saturation, sharpness, gain, WB temp
+UVC lens controls:    Zoom (100-400), focus (0-255), autofocus
+UVC exposure:         Exposure time (3-2047), auto exposure mode
+Interface 3:          Vendor-specific (0xFF/0xFF), unclaimed, unexplored
+IR/Gyroscope:         NOT PRESENT on MX Brio model

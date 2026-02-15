@@ -110,13 +110,13 @@ class CameraModel:
         real_width = self.object_widths.get(class_name)
         if real_width is None or bbox_width_px <= 0:
             return None
-        return (self.fx * real_width) / bbox_width_px
+        return float((self.fx * real_width) / bbox_width_px)
 
     def backproject(self, px, py, z):
         """Back-project pixel (px, py) at depth z to 3D (x, y, z) in meters."""
-        x = (px - self.cx) * z / self.fx
-        y = (py - self.cy) * z / self.fy
-        return x, y, z
+        x = float((px - self.cx) * z / self.fx)
+        y = float((py - self.cy) * z / self.fy)
+        return x, y, float(z)
 
     def calibrate_from_measurement(self, bbox_width_px, known_distance, known_width):
         """Derive fx from a known measurement: object of known_width at known_distance."""
@@ -128,12 +128,12 @@ class CameraModel:
 
     def get_intrinsics(self):
         return {
-            "fx": round(self.fx, 2),
-            "fy": round(self.fy, 2),
-            "cx": round(self.cx, 2),
-            "cy": round(self.cy, 2),
-            "frame_w": self.frame_w,
-            "frame_h": self.frame_h,
+            "fx": round(float(self.fx), 2),
+            "fy": round(float(self.fy), 2),
+            "cx": round(float(self.cx), 2),
+            "cy": round(float(self.cy), 2),
+            "frame_w": int(self.frame_w),
+            "frame_h": int(self.frame_h),
         }
 
 

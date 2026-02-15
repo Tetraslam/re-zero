@@ -1,0 +1,1054 @@
+{
+  "device": "Logitech MX Brio",
+  "vid": "0x046D",
+  "pid": "0x0944",
+  "serial": "2527LVV0U2L8",
+  "timestamp": "2026-02-15 01:30:07",
+  "feature_report_0x9A_function_scan": {
+    "0x00": {
+      "hex": "ERROR: read error"
+    },
+    "0x01": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x02": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x03": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x04": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x05": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x06": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x07": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x08": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x09": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x0A": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x0B": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x0C": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x0D": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x0E": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x0F": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x10": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x11": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x12": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x13": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x14": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x15": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x16": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x17": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x18": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x19": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x1A": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x1B": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x1C": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x1D": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x1E": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x1F": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x20": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x21": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x22": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x23": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x24": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x25": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x26": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x27": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x28": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x29": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x2A": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x2B": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x2C": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x2D": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x2E": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x2F": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x30": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x31": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x32": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x33": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x34": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x35": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x36": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x37": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x38": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x39": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x3A": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x3B": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x3C": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x3D": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x3E": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x3F": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x40": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x41": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x42": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x43": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x44": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x45": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x46": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x47": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x48": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x49": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x4A": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x4B": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x4C": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x4D": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x4E": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x4F": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x50": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x51": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x52": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x53": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x54": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x55": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x56": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x57": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x58": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x59": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x5A": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x5B": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x5C": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x5D": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x5E": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x5F": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x60": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x61": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x62": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x63": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x64": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x65": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x66": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x67": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x68": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x69": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x6A": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x6B": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x6C": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x6D": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x6E": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x6F": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x70": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x71": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x72": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x73": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x74": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x75": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x76": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x77": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x78": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x79": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x7A": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x7B": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x7C": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x7D": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x7E": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x7F": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x80": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x81": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x82": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x83": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x84": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x85": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x86": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x87": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x88": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x89": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x8A": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x8B": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x8C": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x8D": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x8E": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x8F": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x90": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x91": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x92": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x93": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x94": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x95": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x96": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x97": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x98": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x99": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x9A": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x9B": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x9C": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x9D": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x9E": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0x9F": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xA0": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xA1": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xA2": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xA3": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xA4": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xA5": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xA6": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xA7": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xA8": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xA9": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xAA": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xAB": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xAC": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xAD": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xAE": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xAF": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xB0": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xB1": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xB2": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xB3": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xB4": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xB5": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xB6": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xB7": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xB8": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xB9": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xBA": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xBB": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xBC": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xBD": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xBE": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xBF": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xC0": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xC1": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xC2": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xC3": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xC4": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xC5": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xC6": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xC7": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xC8": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xC9": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xCA": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xCB": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xCC": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xCD": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xCE": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xCF": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xD0": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xD1": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xD2": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xD3": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xD4": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xD5": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xD6": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xD7": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xD8": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xD9": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xDA": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xDB": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xDC": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xDD": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xDE": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xDF": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xE0": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xE1": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xE2": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xE3": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xE4": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xE5": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xE6": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xE7": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xE8": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xE9": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xEA": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xEB": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xEC": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xED": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xEE": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xEF": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xF0": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xF1": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xF2": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xF3": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xF4": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xF5": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xF6": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xF7": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xF8": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xF9": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xFA": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xFB": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xFC": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xFD": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xFE": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    },
+    "0xFF": {
+      "hex": "ERROR: read error",
+      "note": "same_as_baseline"
+    }
+  },
+  "feature_report_0x9A_deep_scan": {
+    "0x00": {
+      "0x00": "ERROR: read error"
+    },
+    "0x10": {
+      "0x00": "ERROR: read error"
+    }
+  },
+  "other_feature_reports": {
+    "0x08": "ERROR: read error",
+    "0x40": "ERROR: read error",
+    "0x41": "ERROR: read error",
+    "0x42": "ERROR: read error",
+    "0x43": "ERROR: read error",
+    "0x44": "ERROR: read error",
+    "0x45": "ERROR: read error",
+    "0x46": "ERROR: read error",
+    "0x47": "ERROR: read error",
+    "0x0A": "ERROR: read error",
+    "0x01": "ERROR: read error",
+    "0x55": "ERROR: read error"
+  }
+}

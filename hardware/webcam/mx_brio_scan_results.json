@@ -1,0 +1,90 @@
+{
+  "device": "Logitech MX Brio",
+  "vid_pid": "046D:0944",
+  "serial": "2527LVV0U2L8",
+  "sensor": "Sony IMX415 (1/2.8 inch)",
+  "firmware_version": "1.1 (from register 0x00: bytes 01 01)",
+  "register_0x10_value": "0x27 (39 decimal)",
+  "usb_interfaces": {
+    "0": "UVC Video Control (bInterfaceClass=14, SubClass=1)",
+    "1": "UVC Video Streaming (bInterfaceClass=14, SubClass=2)",
+    "2": "HID - Vendor controls + LED + Telephony (bInterfaceClass=3)",
+    "3": "Vendor Specific (bInterfaceClass=255, SubClass=255) - UNCLAIMED",
+    "4": "USB Audio Control (bInterfaceClass=1, SubClass=1)",
+    "5": "USB Audio Streaming (bInterfaceClass=1, SubClass=2)"
+  },
+  "hid_report_map": {
+    "0x08": {
+      "type": "input+output",
+      "desc": "Telephony: Phone Mute (in), Hook Switch (in), Mute LED (out), Line (out)"
+    },
+    "0x40": {
+      "type": "input",
+      "desc": "Vendor 0xFF00: 2-bit status flags"
+    },
+    "0x41": {
+      "type": "output",
+      "desc": "Vendor 0xFF00: 2-byte control"
+    },
+    "0x42": {
+      "type": "input",
+      "desc": "Vendor 0xFF00: 2-byte data"
+    },
+    "0x43": {
+      "type": "input",
+      "desc": "Vendor 0xFF00: 2-byte data"
+    },
+    "0x44": {
+      "type": "output",
+      "desc": "Vendor 0xFF00: 4-byte control"
+    },
+    "0x45": {
+      "type": "input",
+      "desc": "Vendor 0xFF00: 1-byte data"
+    },
+    "0x46": {
+      "type": "input",
+      "desc": "Vendor 0xFF00: 2-byte data"
+    },
+    "0x47": {
+      "type": "input",
+      "desc": "Vendor 0xFF00: 2-byte data"
+    },
+    "0x0A": {
+      "type": "input",
+      "desc": "Vendor 0xFF01: 31-byte data blob"
+    },
+    "0x01": {
+      "type": "input",
+      "desc": "Vendor 0xFF02: 1-byte button"
+    },
+    "0x55": {
+      "type": "input",
+      "desc": "Logitech 0xFFA1: 6-byte proprietary"
+    },
+    "0x9A": {
+      "type": "feature",
+      "desc": "Logitech 0xFF99: 31-byte read/write register interface"
+    }
+  },
+  "confirmed_capabilities": {
+    "led_mute_control": "CONFIRMED - Report 0x08 bit 0 toggles Mute LED",
+    "led_line_control": "CONFIRMED - Report 0x08 bit 1 toggles Line indicator",
+    "feature_register_read": "CONFIRMED - Report 0x9A register interface responsive",
+    "hid_write": "CONFIRMED - Reports 0x41 and 0x44 accept writes"
+  },
+  "feature_0x9A_registers": {
+    "0x00": {
+      "response": "01 01",
+      "interpretation": "Firmware version 1.1"
+    },
+    "0x10": {
+      "response": "01 27",
+      "interpretation": "Unknown - value 39, possibly hardware revision or sensor temp"
+    },
+    "0x20-0xFF": {
+      "response": "00 00",
+      "interpretation": "Empty/unimplemented registers"
+    }
+  }
+}
