@@ -1,1 +1,0 @@
-bridge: ap=/dev/ttyUSB0 sta=/dev/ttyUSB1 baud=921600 logdir=logs capture=logs/capture_1771134195.sf.bin

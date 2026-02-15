@@ -54,6 +54,19 @@ static const uint16_t DRONE_VIDEO_SRC_PORT = 7070;
 
 static volatile uint8_t last_disc_reason = 0;
 
+// LED handling
+//
+// The old LED logic relied on periodic led_poll() calls. During scans/connect attempts
+// and other busy periods, led_poll() can be starved, making the blink rate look very
+// slow or erratic. Drive the LED from a dedicated FreeRTOS task instead.
+enum LedMode : uint8_t {
+  LEDM_CONNECTING = 0,
+  LEDM_DISCONNECTED = 1,
+  LEDM_SOLID = 2,
+};
+static volatile LedMode g_led_mode = LEDM_CONNECTING;
+static TaskHandle_t g_led_task = nullptr;
+
 static void wifi_set_country_1_to_13() {
   // Some of these drones advertise on ch 12/13. Many ESP32 builds default to US (1-11).
   // Setting 1-13 makes scanning/connecting possible in more cases.
@@ -118,21 +131,50 @@ static void led_set(bool on) {
   digitalWrite(STA_LED_PIN, level ? HIGH : LOW);
 }
 
-static void led_poll() {
-  // Solid ON when connected; blink otherwise.
-  static uint32_t last_toggle_ms = 0;
-  static bool blink_state = false;
-  if (WiFi.status() == WL_CONNECTED) {
-    led_set(true);
-    return;
-  }
-  uint32_t now = millis();
-  // Faster blink while connecting, slower when fully disconnected.
-  uint32_t period_ms = (WiFi.status() == WL_DISCONNECTED) ? 500 : 200;
-  if (now - last_toggle_ms >= period_ms) {
-    last_toggle_ms = now;
-    blink_state = !blink_state;
-    led_set(blink_state);
+static LedMode led_mode_from_wifi() {
+  wl_status_t st = WiFi.status();
+  if (st == WL_CONNECTED) return LEDM_SOLID;
+  if (st == WL_DISCONNECTED) return LEDM_DISCONNECTED;
+  return LEDM_CONNECTING;
+}
+
+static void led_task_fn(void *arg) {
+  (void)arg;
+
+  // CONNECTING: steady blink (toggle every 120ms).
+  // DISCONNECTED: distinct double-blink pattern without long pauses:
+  //   on 70ms, off 110ms, on 70ms, off 230ms (repeat). Max off gap < 300ms.
+  bool state = false;
+  uint8_t phase = 0;
+
+  TickType_t last = xTaskGetTickCount();
+  for (;;) {
+    // Keep mode aligned to actual Wi-Fi state; also update the exported variable so
+    // logs/other code can query it if needed.
+    LedMode m = led_mode_from_wifi();
+    g_led_mode = m;
+
+    uint32_t step_ms = 120;
+    if (m == LEDM_SOLID) {
+      led_set(true);
+      phase = 0;
+      step_ms = 200;
+    } else if (m == LEDM_CONNECTING) {
+      state = !state;
+      led_set(state);
+      phase = 0;
+      step_ms = 120;
+    } else {  // LEDM_DISCONNECTED
+      switch (phase) {
+        case 0: led_set(true);  step_ms = 70;  phase = 1; break;
+        case 1: led_set(false); step_ms = 110; phase = 2; break;
+        case 2: led_set(true);  step_ms = 70;  phase = 3; break;
+        default: led_set(false); step_ms = 230; phase = 0; break;
+      }
+      state = false;
+    }
+
+    vTaskDelayUntil(&last, pdMS_TO_TICKS(step_ms));
   }
 }
 
@@ -339,18 +381,22 @@ static void on_wifi_event(WiFiEvent_t event, WiFiEventInfo_t info) {
   switch (event) {
     case ARDUINO_EVENT_WIFI_STA_START:
       sf_log("wifi: STA_START");
+      g_led_mode = LEDM_CONNECTING;
       break;
     case ARDUINO_EVENT_WIFI_STA_CONNECTED:
       sf_log("wifi: STA_CONNECTED");
+      g_led_mode = LEDM_CONNECTING;
       break;
     case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
       last_disc_reason = (uint8_t)info.wifi_sta_disconnected.reason;
       sf_logf("wifi: STA_DISCONNECTED reason=%u", (unsigned)info.wifi_sta_disconnected.reason);
+      g_led_mode = LEDM_DISCONNECTED;
       break;
     case ARDUINO_EVENT_WIFI_STA_GOT_IP:
       sf_logf("wifi: GOT_IP ip=%s gw=%s",
               WiFi.localIP().toString().c_str(),
               WiFi.gatewayIP().toString().c_str());
+      g_led_mode = LEDM_SOLID;
       break;
     default:
       // Other events are less useful; keep noise down.
@@ -376,7 +422,6 @@ static void wifi_join() {
   uint32_t start = millis();
   uint32_t last_wait_log = 0;
   while (WiFi.status() != WL_CONNECTED && millis() - start < 15000) {
-    led_poll();  // show activity even before loop() starts
     uint32_t now = millis();
     if (now - last_wait_log > 1000) {
       last_wait_log = now;
@@ -792,6 +837,11 @@ void setup() {
 
   pinMode(STA_LED_PIN, OUTPUT);
   led_set(false);
+  // Start LED task early so blink timing doesn't depend on main-loop cadence.
+  g_led_mode = LEDM_CONNECTING;
+  if (g_led_task == nullptr) {
+    xTaskCreatePinnedToCore(led_task_fn, "led", 2048, nullptr, 1, &g_led_task, 0);
+  }
 
   wifi_join();
   send_hello();
@@ -805,7 +855,8 @@ void loop() {
     send_hello();
   }
 
-  led_poll();
+  // Keep mode aligned; LED task enforces stable blink timing.
+  g_led_mode = led_mode_from_wifi();
   wifi_status_heartbeat();
   wifi_ensure_connected();
 

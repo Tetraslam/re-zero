@@ -1,5 +1,7 @@
 import argparse
 import json
+import os
+import re
 import threading
 import time
 import queue
@@ -8,6 +10,7 @@ from typing import Dict, Optional, Tuple, Callable
 
 import serial
 from serial.tools import list_ports
+import termios
 
 from .serial_frame import Decoder, Frame, SfType
 
@@ -19,6 +22,22 @@ def _hex_head(b: bytes, n: int = 32) -> str:
     if not b:
         return ""
     return b[:n].hex()
+
+def _disable_hupcl(ser: serial.Serial, label: str) -> None:
+    """
+    Many ESP32 dev boards auto-reset when the serial port is opened/closed due to
+    DTR/RTS wiring. Disabling HUPCL reduces resets on close/reopen by preventing
+    the kernel from dropping modem control lines on last close.
+    """
+    try:
+        fd = ser.fileno()
+        attr = termios.tcgetattr(fd)
+        # c_cflag is index 2.
+        attr[2] = attr[2] & ~termios.HUPCL
+        termios.tcsetattr(fd, termios.TCSANOW, attr)
+    except Exception:
+        # Best-effort only; never fail the bridge because of this.
+        return
 
 
 def _typ_name(t: int) -> str:
@@ -153,6 +172,196 @@ def make_logger(logdir: Path, enabled: bool) -> Callable[[str, str, Frame], None
     return log
 
 
+class ProtoLogger:
+    """
+    Focused protocol logger for reverse engineering.
+
+    Writes a compact JSONL stream of:
+    - phone -> drone commands (UDP 40000/50000, TCP 7060/8060/9060)
+    - drone -> phone non-video telemetry (UDP 40000/50000, TCP responses)
+
+    This is separate from the generic bridge JSONL to keep the data set small and
+    easy to diff between test runs.
+    """
+
+    def __init__(self, logdir: Path) -> None:
+        logdir.mkdir(parents=True, exist_ok=True)
+        self.path = logdir / f"proto_{int(time.time())}.jsonl"
+        self._fp = self.path.open("a", buffering=1024 * 1024)
+        self._q: "queue.Queue[dict]" = queue.Queue(maxsize=20000)
+        self._stop = threading.Event()
+        self._t0 = _now()
+
+        def _worker() -> None:
+            last_flush = _now()
+            while not self._stop.is_set():
+                try:
+                    rec = self._q.get(timeout=0.2)
+                except queue.Empty:
+                    rec = None
+                if rec is not None:
+                    self._fp.write(json.dumps(rec) + "\n")
+                now = _now()
+                if now - last_flush > 1.0:
+                    try:
+                        self._fp.flush()
+                    except Exception:
+                        pass
+                    last_flush = now
+
+        self._thr = threading.Thread(target=_worker, name="proto-logger", daemon=True)
+        self._thr.start()
+
+        self._ssid_re = re.compile(rb"RADCLOFPV_[0-9]+")
+
+    def close(self) -> None:
+        try:
+            self._stop.set()
+        except Exception:
+            pass
+        try:
+            self._fp.flush()
+            self._fp.close()
+        except Exception:
+            pass
+
+    @staticmethod
+    def _u16le(b: bytes) -> Optional[int]:
+        if len(b) < 2:
+            return None
+        return int.from_bytes(b[:2], "little", signed=False)
+
+    @staticmethod
+    def _u16be(b: bytes) -> Optional[int]:
+        if len(b) < 2:
+            return None
+        return int.from_bytes(b[:2], "big", signed=False)
+
+    @staticmethod
+    def _u32le(b: bytes) -> Optional[int]:
+        if len(b) < 4:
+            return None
+        return int.from_bytes(b[:4], "little", signed=False)
+
+    @staticmethod
+    def _u32be(b: bytes) -> Optional[int]:
+        if len(b) < 4:
+            return None
+        return int.from_bytes(b[:4], "big", signed=False)
+
+    def want(self, direction: str, fr: Frame) -> bool:
+        # direction is the pump name: "AP->STA" or "STA->AP".
+        if fr.type == SfType.UDP and fr.port in (40000, 50000):
+            return True
+        if fr.type in (SfType.TCP_OPEN, SfType.TCP_OPEN_OK, SfType.TCP_OPEN_FAIL, SfType.TCP_CLOSE, SfType.TCP_DATA) and fr.port in (7060, 8060, 9060):
+            return True
+        return False
+
+    def _parse_udp_cc(self, payload: bytes) -> dict:
+        # Many observed UDP payloads start with 0x63 0x63 ("cc").
+        out: dict = {}
+        if len(payload) >= 2 and payload[0] == 0x63 and payload[1] == 0x63:
+            out["cc"] = True
+            if len(payload) >= 3:
+                out["cc_type_u8"] = payload[2]
+            if len(payload) >= 4:
+                out["cc_b3_u8"] = payload[3]
+            if len(payload) >= 5:
+                out["cc_u16le_3"] = self._u16le(payload[3:5])
+            if len(payload) >= 7:
+                out["cc_u16le_5"] = self._u16le(payload[5:7])
+            if len(payload) >= 7:
+                out["cc_u32le_3"] = self._u32le(payload[3:7])
+        return out
+
+    def _parse_tcp_lewei(self, payload: bytes) -> dict:
+        out: dict = {}
+        if payload.startswith(b"lewei_cmd"):
+            out["lewei_cmd"] = True
+            # Heuristic: the next two bytes appear to be a big-endian u16 command type
+            # (observed 0x0001, 0x0002, 0x0004).
+            if len(payload) >= 11:
+                out["cmd_type_u16be"] = self._u16be(payload[9:11])
+            if len(payload) >= 15:
+                out["cmd_word0_u32be"] = self._u32be(payload[11:15])
+        return out
+
+    def _extract_ssid(self, payload: bytes) -> Optional[str]:
+        m = self._ssid_re.search(payload)
+        if not m:
+            return None
+        try:
+            return m.group(0).decode("ascii", errors="replace")
+        except Exception:
+            return None
+
+    def emit(self, direction: str, dev: str, fr: Frame) -> None:
+        if not self.want(direction, fr):
+            return
+
+        flow: str
+        if direction == "AP->STA":
+            flow = "phone->drone"
+        elif direction == "STA->AP":
+            flow = "drone->phone"
+        else:
+            flow = direction
+
+        transport = "udp" if fr.type == SfType.UDP else "tcp"
+        typ = _typ_name(fr.type)
+        payload = fr.payload or b""
+
+        kind = f"{flow}:{transport}"
+
+        rec: dict = {
+            "ts": _now(),
+            "t_rel_ms": int((_now() - self._t0) * 1000),
+            "flow": flow,
+            "kind": kind,
+            "sf_dir": direction,
+            "dev": dev,
+            "transport": transport,
+            "sf_type": typ,
+            "conn": fr.conn,
+            "port": fr.port,
+            "len": len(payload),
+        }
+
+        # Payload capture: full for small messages, truncated otherwise.
+        if payload:
+            if len(payload) <= 512:
+                rec["payload_hex"] = payload.hex()
+            else:
+                rec["payload_head_hex"] = payload[:128].hex()
+
+        if transport == "udp":
+            # For UDP:
+            # - phone->drone: conn = phone_src_port, port = drone_dst_port
+            # - drone->phone: conn = phone_dst_port, port = drone_src_port
+            if flow == "phone->drone":
+                rec["phone_src_port"] = fr.conn
+                rec["drone_dst_port"] = fr.port
+            elif flow == "drone->phone":
+                rec["phone_dst_port"] = fr.conn
+                rec["drone_src_port"] = fr.port
+            rec.update(self._parse_udp_cc(payload))
+            # Convenience: treat bytes[2:4] as an opcode-like field (u16le) when present.
+            if len(payload) >= 4:
+                rec["cc_opcode_u16le_2"] = self._u16le(payload[2:4])
+            ssid = self._extract_ssid(payload)
+            if ssid:
+                rec["ssid"] = ssid
+        else:
+            rec["tcp_port"] = fr.port
+            rec.update(self._parse_tcp_lewei(payload))
+
+        try:
+            self._q.put_nowait(rec)
+        except queue.Full:
+            # Drop under load; protocol logging must not affect forwarding latency.
+            pass
+
+
 class CaptureWriter:
     """
     Writes raw framed bytes to disk for later offline decoding.
@@ -195,7 +404,7 @@ class CaptureWriter:
                 pass
 
 
-def pump(name: str, src: serial.Serial, dst: serial.Serial, log, stop_evt: threading.Event, print_logs: bool, print_hello: bool, cap: Optional[CaptureWriter]):
+def pump(name: str, src: serial.Serial, dst: serial.Serial, log, proto: Optional[ProtoLogger], stop_evt: threading.Event, print_logs: bool, print_hello: bool, cap: Optional[CaptureWriter]):
     dec = Decoder()
     tap_udp_left = 0
     tap_tcp_left = 0
@@ -215,6 +424,21 @@ def pump(name: str, src: serial.Serial, dst: serial.Serial, log, stop_evt: threa
         tap_ports = getattr(log, "_tap_ports", None)      # type: ignore[attr-defined]
     except Exception:
         pass
+
+    # Rate-limited live prints for command RE (stdout should not become the log).
+    # Commands are fully captured in proto_*.jsonl; stdout is a concise view.
+    cmd_last_by_key: Dict[Tuple[int, int], bytes] = {}
+    cmd_rep_by_key: Dict[Tuple[int, int], int] = {}
+    cmd_last_print_by_key: Dict[Tuple[int, int], float] = {}
+    cmd_repeat_flush_s = 1.0  # emit a summary for repeats at most once per second
+    cmd_print_static = False
+    try:
+        cmd_print_static = bool(getattr(log, "_cmd_print_static", False))  # type: ignore[attr-defined]
+    except Exception:
+        cmd_print_static = False
+
+    tel_last_print_s = 0.0
+    tel_min_interval_s = 1.0  # show at most ~1 drone->phone packet per second
 
     while not stop_evt.is_set():
         try:
@@ -243,7 +467,11 @@ def pump(name: str, src: serial.Serial, dst: serial.Serial, log, stop_evt: threa
                         txt = fr.payload.decode("utf-8", errors="replace").rstrip()
                     except Exception:
                         txt = fr.payload.hex()
-                    print(f"[{name}] {src.port} LOG: {txt}", flush=True)
+                    # Keep stdout useful: suppress repetitive Wi-Fi heartbeat spam by default.
+                    if txt.startswith("wifi: hb"):
+                        pass
+                    else:
+                        print(f"[{name}] {src.port} LOG: {txt}", flush=True)
             elif fr.type == SfType.HELLO:
                 if print_hello:
                     try:
@@ -268,6 +496,67 @@ def pump(name: str, src: serial.Serial, dst: serial.Serial, log, stop_evt: threa
                         f"[{name}] {src.port} UDP conn={fr.conn} port={fr.port} len={len(fr.payload)} head={_hex_head(fr.payload, tap_bytes)}",
                         flush=True,
                     )
+                # Phone->drone commands (stdout):
+                # - Default: only print on payload change (so neutral/static repeats don't spam).
+                # - Optional: if cmd_print_static is enabled, also print repeat summaries.
+                if name == "AP->STA" and fr.port in (40000, 50000):
+                    now = _now()
+                    p = fr.payload or b""
+                    key = (fr.conn, fr.port)
+                    prev = cmd_last_by_key.get(key)
+
+                    if prev is None:
+                        cmd_last_by_key[key] = p
+                        cmd_rep_by_key[key] = 1
+                        cmd_last_print_by_key[key] = now
+                        op = None
+                        if len(p) >= 4 and p[0] == 0x63 and p[1] == 0x63:
+                            op = int.from_bytes(p[2:4], "little", signed=False)
+                        op_s = f" op=0x{op:04x}" if op is not None else ""
+                        print(f"[CMD] udp dst={fr.port} phone_src={fr.conn} len={len(p)}{op_s} head={_hex_head(p, 24)}", flush=True)
+                    elif p == prev:
+                        cmd_rep_by_key[key] = cmd_rep_by_key.get(key, 1) + 1
+                        if cmd_print_static:
+                            last_p = cmd_last_print_by_key.get(key, 0.0)
+                            if now - last_p >= cmd_repeat_flush_s:
+                                reps = cmd_rep_by_key.get(key, 1)
+                                op = None
+                                if len(p) >= 4 and p[0] == 0x63 and p[1] == 0x63:
+                                    op = int.from_bytes(p[2:4], "little", signed=False)
+                                op_s = f" op=0x{op:04x}" if op is not None else ""
+                                print(
+                                    f"[CMD] udp dst={fr.port} phone_src={fr.conn} len={len(p)}{op_s} head={_hex_head(p, 24)} (x{reps})",
+                                    flush=True,
+                                )
+                                cmd_rep_by_key[key] = 0
+                                cmd_last_print_by_key[key] = now
+                    else:
+                        # Payload changed: emit previous repeat count if we haven't already, then emit new payload.
+                        reps = cmd_rep_by_key.get(key, 0)
+                        if cmd_print_static and reps > 1:
+                            print(f"[CMD] udp dst={fr.port} phone_src={fr.conn} (previous repeated x{reps})", flush=True)
+                        cmd_last_by_key[key] = p
+                        cmd_rep_by_key[key] = 1
+                        cmd_last_print_by_key[key] = now
+                        op = None
+                        if len(p) >= 4 and p[0] == 0x63 and p[1] == 0x63:
+                            op = int.from_bytes(p[2:4], "little", signed=False)
+                        op_s = f" op=0x{op:04x}" if op is not None else ""
+                        print(f"[CMD] udp dst={fr.port} phone_src={fr.conn} len={len(p)}{op_s} head={_hex_head(p, 24)}", flush=True)
+
+                # Show a small sample of drone->phone telemetry (non-video).
+                if name == "STA->AP" and fr.port in (40000, 50000):
+                    now = _now()
+                    if now - tel_last_print_s >= tel_min_interval_s:
+                        tel_last_print_s = now
+                        p = fr.payload or b""
+                        cc = (len(p) >= 2 and p[0] == 0x63 and p[1] == 0x63)
+                        cc_type = p[2] if len(p) >= 3 else None
+                        cc_s = f" cc_type=0x{cc_type:02x}" if (cc and cc_type is not None) else ""
+                        print(
+                            f"[TEL] udp src={fr.port} phone_dst={fr.conn} len={len(p)}{cc_s} head={_hex_head(p, 24)}",
+                            flush=True,
+                        )
                 try:
                     dst.write(raw)
                 except Exception:
@@ -291,6 +580,11 @@ def pump(name: str, src: serial.Serial, dst: serial.Serial, log, stop_evt: threa
                 except Exception:
                     stop_evt.set()
                     break
+            if proto is not None:
+                try:
+                    proto.emit(name, src.port, fr)
+                except Exception:
+                    pass
             try:
                 log(name, src.port, fr)
             except Exception:
@@ -307,9 +601,10 @@ def main():
     ap.add_argument("--logdir", default="logs")
     ap.add_argument("--no-print-logs", action="store_true", help="Disable printing of LOG frames to stdout.")
     ap.add_argument("--print-hello", action="store_true", help="Also print HELLO frames (usually noise/backlog).")
-    ap.add_argument("--tap-udp", type=int, default=30, help="Print first N UDP frames per direction (for protocol debugging).")
-    ap.add_argument("--tap-tcp", type=int, default=30, help="Print first N TCP_DATA frames per direction (for protocol debugging).")
-    ap.add_argument("--tap-bytes", type=int, default=64, help="Bytes of payload to include for --tap-* (hex).")
+    ap.add_argument("--print-cmd-static", action="store_true", help="Also print repeated/static phone->drone command packets (normally suppressed).")
+    ap.add_argument("--tap-udp", type=int, default=0, help="Print first N UDP frames per direction (for protocol debugging).")
+    ap.add_argument("--tap-tcp", type=int, default=0, help="Print first N TCP_DATA frames per direction (for protocol debugging).")
+    ap.add_argument("--tap-bytes", type=int, default=48, help="Bytes of payload to include for --tap-* (hex).")
     ap.add_argument("--tap-ports", default="40000,50000,7070,7060,8060,9060", help="Comma-separated destination ports filter for --tap-*.")
     ap.add_argument("--no-jsonl", action="store_true", help="Disable JSONL logging to disk (lower latency).")
     ap.add_argument("--no-autofix-roles", action="store_true", help="Disable auto-swapping if --ap/--sta are swapped.")
@@ -324,11 +619,13 @@ def main():
     logdir = Path(args.logdir)
     logger = make_logger(logdir, enabled=(not args.no_jsonl))
     cap = CaptureWriter(logdir)
+    proto = ProtoLogger(logdir)
     # Attach tap config to logger callable so pump threads can access without globals.
     try:
         setattr(logger, "_tap_udp_left", int(args.tap_udp))  # type: ignore[attr-defined]
         setattr(logger, "_tap_tcp_left", int(args.tap_tcp))  # type: ignore[attr-defined]
         setattr(logger, "_tap_bytes", int(args.tap_bytes))   # type: ignore[attr-defined]
+        setattr(logger, "_cmd_print_static", bool(args.print_cmd_static))  # type: ignore[attr-defined]
         ports = set()
         if args.tap_ports.strip():
             for part in args.tap_ports.split(","):
@@ -342,19 +639,10 @@ def main():
 
     print(f"bridge: ap={ap_dev} sta={sta_dev} baud={args.baud} logdir={logdir} capture={cap.path}", flush=True)
     # timeout=0 (non-blocking) for lowest latency. Use in_waiting to avoid busy waits.
-    ser_ap = serial.Serial(ap_dev, baudrate=args.baud, timeout=0, write_timeout=0.2, dsrdtr=False, rtscts=False)
-    ser_sta = serial.Serial(sta_dev, baudrate=args.baud, timeout=0, write_timeout=0.2, dsrdtr=False, rtscts=False)
-    # Avoid toggling lines that can reset ESP32 on some USB-serial adapters.
-    try:
-        ser_ap.dtr = False
-        ser_ap.rts = False
-    except Exception:
-        pass
-    try:
-        ser_sta.dtr = False
-        ser_sta.rts = False
-    except Exception:
-        pass
+    ser_ap = serial.Serial(ap_dev, baudrate=args.baud, timeout=0, write_timeout=0.2, dsrdtr=False, rtscts=False, exclusive=True)
+    ser_sta = serial.Serial(sta_dev, baudrate=args.baud, timeout=0, write_timeout=0.2, dsrdtr=False, rtscts=False, exclusive=True)
+    _disable_hupcl(ser_ap, "ap")
+    _disable_hupcl(ser_sta, "sta")
 
     role_ap = identify_role(ser_ap, timeout_s=6.0)
     role_sta = identify_role(ser_sta, timeout_s=6.0)
@@ -372,8 +660,9 @@ def main():
 
     stop_evt = threading.Event()
     print_logs = (not args.no_print_logs)
-    t1 = threading.Thread(target=pump, args=("AP->STA", ser_ap, ser_sta, logger, stop_evt, print_logs, args.print_hello, cap), daemon=True)
-    t2 = threading.Thread(target=pump, args=("STA->AP", ser_sta, ser_ap, logger, stop_evt, print_logs, args.print_hello, cap), daemon=True)
+    print(f"bridge: proto_log={proto.path}", flush=True)
+    t1 = threading.Thread(target=pump, args=("AP->STA", ser_ap, ser_sta, logger, proto, stop_evt, print_logs, args.print_hello, cap), daemon=True)
+    t2 = threading.Thread(target=pump, args=("STA->AP", ser_sta, ser_ap, logger, proto, stop_evt, print_logs, args.print_hello, cap), daemon=True)
     t1.start()
     t2.start()
 
@@ -404,6 +693,10 @@ def main():
             pass
         try:
             cap.close()
+        except Exception:
+            pass
+        try:
+            proto.close()
         except Exception:
             pass
 

@@ -1,0 +1,149 @@
+bridge: ap=/dev/ttyUSB0 sta=/dev/ttyUSB1 baud=921600 logdir=logs capture=logs/capture_1771136924.sf.bin
+bridge: roles ap_role=AP sta_role=STA
+bridge: proto_log=logs/proto_1771136924.jsonl
+[CMD] udp dst=40000 phone_src=6000 len=7 op=0x0001 head=63630100000000
+[STA->AP] /dev/ttyUSB1 LOG: udp: drop_video from=192.168.0.1:7070 -> local=6000 len=1454 (not forwarded over serial)
+[CMD] udp dst=40000 phone_src=6000 len=7 op=0x0001 head=63630100000000 (x2)
+[STA->AP] /dev/ttyUSB1 LOG: udp: first_rx_from_drone(nonvideo) from=192.168.0.1:40000 -> local=6000 len=106
+[TEL] udp src=40000 phone_dst=6000 len=106 cc_type=0x01 head=63630128006300524144434c4f4650565f38333938313900
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a00000800668080ff80007f99
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a000008006680808080000099
+[CMD] udp dst=40000 phone_src=5010 (previous repeated x15)
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a00000800668080e480006499
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a00000800668080ff80007f99
+[CMD] udp dst=40000 phone_src=5010 (previous repeated x3)
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a000008006680808080000099
+[CMD] udp dst=40000 phone_src=6000 len=7 op=0x0001 head=63630100000000 (x1)
+[TEL] udp src=40000 phone_dst=6000 len=106 cc_type=0x01 head=63630129006300524144434c4f4650565f38333938313900
+[CMD] udp dst=40000 phone_src=5010 (previous repeated x10)
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a000008006680807b8000fb99
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a000008006680800080008099
+[CMD] udp dst=40000 phone_src=5010 (previous repeated x2)
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a000008006680808080000099
+[CMD] udp dst=40000 phone_src=6000 len=7 op=0x0001 head=63630100000000 (x1)
+[TEL] udp src=40000 phone_dst=6000 len=106 cc_type=0x01 head=6363012a006300524144434c4f4650565f38333938313900
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a000008006680808080000099 (x24)
+[CMD] udp dst=40000 phone_src=5010 (previous repeated x17)
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a000008006680808280000299
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a00000800668080875100d699
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a000008006680808703008499
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a000008006680808701008699
+[CMD] udp dst=40000 phone_src=5010 (previous repeated x2)
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a000008006680808901008899
+[CMD] udp dst=40000 phone_src=5010 (previous repeated x7)
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a000008006680808080000099
+[CMD] udp dst=40000 phone_src=6000 len=7 op=0x0001 head=63630100000000 (x2)
+[TEL] udp src=40000 phone_dst=6000 len=106 cc_type=0x01 head=6363012c006300524144434c4f4650565f38333938313900
+[CMD] udp dst=40000 phone_src=5010 (previous repeated x17)
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a000008006680805acd009799
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a0000080066808056f800ae99
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a000008006680805bfa00a199
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a000008006680805ffd00a299
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a0000080066808062fd009f99
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a0000080066808064ff009b99
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a0000080066808068ff009799
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a000008006680806aff009599
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a000008006680806dff009299
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a0000080066808072ff008d99
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a000008006680808080000099
+[CMD] udp dst=40000 phone_src=5010 (previous repeated x15)
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a00000800668080ac80002c99
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a00000800668080a76700c099
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a000008006680809d01009c99
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a000008006680809601009799
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a000008006680809501009499
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a000008006680808080000099
+[CMD] udp dst=40000 phone_src=6000 len=7 op=0x0001 head=63630100000000 (x2)
+[TEL] udp src=40000 phone_dst=6000 len=106 cc_type=0x01 head=6363012e006300524144434c4f4650565f38333938313900
+[CMD] udp dst=40000 phone_src=5010 (previous repeated x9)
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a0000080066808093d0004399
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a000008006680808bff007499
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a0000080066808089ff007699
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a000008006680808eff007199
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a000008006680808080000099
+[CMD] udp dst=40000 phone_src=6000 len=7 op=0x0001 head=63630100000000 (x1)
+[CMD] udp dst=40000 phone_src=5010 (previous repeated x13)
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a00000800668080358000b599
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a000008006680800080008099
+[CMD] udp dst=40000 phone_src=5010 (previous repeated x2)
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a000008006680808080000099
+[CMD] udp dst=40000 phone_src=5010 (previous repeated x14)
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a000008006680805e8000de99
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a000008006680800080008099
+[CMD] udp dst=40000 phone_src=6000 len=7 op=0x0001 head=63630100000000 (x1)
+[TEL] udp src=40000 phone_dst=6000 len=106 cc_type=0x01 head=63630130006300524144434c4f4650565f38333938313900
+[CMD] udp dst=40000 phone_src=5010 (previous repeated x12)
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a000008006680808080000099
+[CMD] udp dst=40000 phone_src=6000 len=7 op=0x0001 head=63630100000000 (x1)
+[TEL] udp src=40000 phone_dst=6000 len=106 cc_type=0x01 head=63630131006300524144434c4f4650565f38333938313900
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a000008006680808080000099 (x24)
+[CMD] udp dst=40000 phone_src=5010 (previous repeated x8)
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a00000800668d928080001f99
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a00000800668aa78080002d99
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a000008006686a88080002e99
+[CMD] udp dst=40000 phone_src=6000 len=7 op=0x0001 head=63630100000000 (x1)
+[CMD] udp dst=40000 phone_src=5010 (previous repeated x2)
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a000008006685a88080002d99
+[CMD] udp dst=40000 phone_src=5010 (previous repeated x6)
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a000008006680808080000099
+[CMD] udp dst=40000 phone_src=5010 (previous repeated x11)
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a00000800667783808000f499
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a00000800666583808000e699
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a00000800665880808000d899
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a0000080066587f8080002799
+[CMD] udp dst=40000 phone_src=6000 len=7 op=0x0001 head=63630100000000 (x1)
+[TEL] udp src=40000 phone_dst=6000 len=106 cc_type=0x01 head=63630133006300524144434c4f4650565f38333938313900
+[CMD] udp dst=40000 phone_src=5010 (previous repeated x4)
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a000008006680808080000099
+[CMD] udp dst=40000 phone_src=5010 (previous repeated x11)
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a00000800668561808000e499
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a00000800668258808000da99
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a00000800668058808000d899
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a00000800667f588080002799
+[CMD] udp dst=40000 phone_src=5010 (previous repeated x3)
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a000008006680808080000099
+[CMD] udp dst=40000 phone_src=6000 len=7 op=0x0001 head=63630100000000 (x1)
+[CMD] udp dst=40000 phone_src=5010 (previous repeated x10)
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a000008006696858080001399
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a0000080066a78a8080002d99
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a0000080066a8868080002e99
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a0000080066a8848080002c99
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a0000080066a8838080002b99
+[CMD] udp dst=40000 phone_src=5010 (previous repeated x3)
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a000008006680808080000099
+[CMD] udp dst=40000 phone_src=6000 len=7 op=0x0001 head=63630100000000 (x1)
+[TEL] udp src=40000 phone_dst=6000 len=106 cc_type=0x01 head=63630135006300524144434c4f4650565f38333938313900
+[CMD] udp dst=40000 phone_src=5010 (previous repeated x10)
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a00000800668b918080001a99
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a00000800668ea68080002899
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a00000800668ba78080002c99
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a00000800668aa78080002d99
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a000008006689a78080002e99
+[CMD] udp dst=40000 phone_src=5010 (previous repeated x3)
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a000008006680808080000099
+[CMD] udp dst=40000 phone_src=5010 (previous repeated x8)
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a00000800666d85808000e899
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a00000800665b85808000de99
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a00000800665882808000da99
+[CMD] udp dst=40000 phone_src=5010 (previous repeated x2)
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a00000800665881808000d999
+[CMD] udp dst=40000 phone_src=6000 len=7 op=0x0001 head=63630100000000 (x1)
+[CMD] udp dst=40000 phone_src=5010 (previous repeated x2)
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a000008006680808080000099
+[CMD] udp dst=40000 phone_src=5010 (previous repeated x8)
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a00000800668179808000f899
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a00000800668558808000dd99
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a00000800668358808000db99
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a00000800668158808000d999
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a00000800668058808000d899
+[CMD] udp dst=40000 phone_src=5010 (previous repeated x2)
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a000008006680808080000099
+[CMD] udp dst=40000 phone_src=6000 len=7 op=0x0001 head=63630100000000 (x1)
+[CMD] udp dst=40000 phone_src=5010 (previous repeated x8)
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a00000800669a858080001f99
+[TEL] udp src=40000 phone_dst=6000 len=106 cc_type=0x01 head=63630137006300524144434c4f4650565f38333938313900
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a0000080066a8848080002c99
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a0000080066a8808080002899
+[CMD] udp dst=40000 phone_src=5010 (previous repeated x7)
+[CMD] udp dst=40000 phone_src=5010 len=15 op=0x000a head=63630a000008006680808080000099
+[CMD] udp dst=40000 phone_src=6000 len=7 op=0x0001 head=63630100000000 (x1)
