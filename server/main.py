@@ -6,9 +6,9 @@ from app.routers import scans, gateways
 
 app = FastAPI(title="Re:Zero Server", version="0.1.0")
 
-_origins = [settings.frontend_url]
-if settings.frontend_url != "http://localhost:3000":
-    _origins.append("http://localhost:3000")  # keep local dev working
+_origins = [o.strip() for o in settings.frontend_url.split(",") if o.strip()]
+if "http://localhost:3000" not in _origins:
+    _origins.append("http://localhost:3000")
 
 app.add_middleware(
     CORSMiddleware,
