@@ -9,6 +9,7 @@ import { useEffect } from "react";
 export function SyncUser() {
   const { user, isLoaded } = useUser();
   const getOrCreate = useMutation(api.users.getOrCreate);
+  const getOrCreateDefaultKey = useMutation(api.apiKeys.getOrCreateDefault);
   const { setTheme } = useTheme();
 
   const convexUser = useQuery(
@@ -26,6 +27,13 @@ export function SyncUser() {
       imageUrl: user.imageUrl,
     });
   }, [isLoaded, user, getOrCreate]);
+
+  // Auto-generate default API key
+  useEffect(() => {
+    if (convexUser?._id) {
+      getOrCreateDefaultKey({ userId: convexUser._id });
+    }
+  }, [convexUser?._id, getOrCreateDefaultKey]);
 
   // Apply saved theme preference
   useEffect(() => {
