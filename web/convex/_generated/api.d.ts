@@ -9,6 +9,7 @@
  */
 
 import type * as actions from "../actions.js";
+import type * as apiKeys from "../apiKeys.js";
 import type * as projects from "../projects.js";
 import type * as prompts from "../prompts.js";
 import type * as reports from "../reports.js";
@@ -24,6 +25,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   actions: typeof actions;
+  apiKeys: typeof apiKeys;
   projects: typeof projects;
   prompts: typeof prompts;
   reports: typeof reports;

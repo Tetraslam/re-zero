@@ -120,4 +120,15 @@ export default defineSchema({
     ),
     lastSeen: v.number(),
   }).index("by_project", ["projectId"]),
+
+  apiKeys: defineTable({
+    userId: v.id("users"),
+    key: v.string(),
+    name: v.string(),
+    lastUsedAt: v.optional(v.number()),
+    createdAt: v.number(),
+    revokedAt: v.optional(v.number()),
+  })
+    .index("by_key", ["key"])
+    .index("by_user", ["userId"]),
 });

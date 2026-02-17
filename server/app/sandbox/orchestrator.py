@@ -5,8 +5,35 @@ Modal containers can't reach localhost.
 """
 
 import modal
+import os
 
 MINUTES = 60
+
+
+def _get_anthropic_client():
+    """Create Anthropic client — uses Bedrock if USE_BEDROCK=true, else direct API."""
+    if os.environ.get("USE_BEDROCK") == "true":
+        from anthropic import AnthropicBedrock
+        return AnthropicBedrock(aws_region=os.environ.get("AWS_REGION", "us-west-2"))
+    from anthropic import Anthropic
+    return Anthropic()
+
+
+def _get_model_id(model_name: str) -> str:
+    """Map model names to Bedrock model IDs when using Bedrock."""
+    if os.environ.get("USE_BEDROCK") != "true":
+        return model_name
+    mapping = {
+        "claude-opus-4-6": "global.anthropic.claude-opus-4-6-v1",
+        "claude-sonnet-4-5": "global.anthropic.claude-sonnet-4-5-20250929-v1:0",
+        "claude-haiku-4-5": "global.anthropic.claude-haiku-4-5-20251001-v1:0",
+    }
+    return mapping.get(model_name, model_name)
+
+
+def _use_bedrock() -> bool:
+    """Check if we're using Bedrock."""
+    return os.environ.get("USE_BEDROCK") == "true"
 
 # MCP servers available to the agent
 MCP_SERVERS = [
@@ -22,7 +49,7 @@ sandbox_image = (
     .apt_install("git", "curl", "jq")
     .pip_install(
         "httpx",
-        "anthropic",
+        "anthropic[bedrock]",
         "pydantic",
     )
 )
@@ -32,7 +59,7 @@ web_sandbox_image = (
     .apt_install("curl")
     .pip_install(
         "httpx",
-        "anthropic",
+        "anthropic[bedrock]",
         "pydantic",
         "playwright",
     )
@@ -43,7 +70,7 @@ web_sandbox_image = (
 opencode_sandbox_image = (
     modal.Image.debian_slim(python_version="3.12")
     .apt_install("git", "curl", "jq", "unzip")
-    .pip_install("httpx", "pydantic", "anthropic")
+    .pip_install("httpx", "pydantic", "anthropic[bedrock]")
     .run_commands(
         # Install OpenCode CLI
         "curl -fsSL https://opencode.ai/install | bash",
@@ -287,7 +314,7 @@ async def _compile_report(
     if len(trace_text) > 80000:
         trace_text = trace_text[:80000] + "\n... (trace truncated)"
 
-    client = anthropic.Anthropic()
+    client = _get_anthropic_client()
 
     system = """You are a security report writer. You're given the full trace from an automated penetration test / security scan. Your job is to read through the trace and produce a structured vulnerability report.
 
@@ -302,12 +329,13 @@ Extract every distinct vulnerability or security issue mentioned in the trace. F
 Be thorough — if the scanning agent mentioned it, include it. Don't combine multiple issues into one finding. The summary should be 2-3 sentences covering the overall security posture."""
 
     response = client.messages.create(
-        model="claude-opus-4-6",
+        model=_get_model_id("claude-opus-4-6"),
         max_tokens=8192,
-        system=system,
+        system=[{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
         tools=[{
             "name": "submit_findings",
             "description": "Submit the structured security report",
+            "cache_control": {"type": "ephemeral"},
             "input_schema": {
                 "type": "object",
                 "properties": {
@@ -398,12 +426,12 @@ async def _run_claude_agent(
     convex_url: str,
     deploy_key: str,
 ):
-    """Run security scan using Claude API (Opus 4.6)."""
+    """Run security scan using Claude API (Opus 4.6 or equivalent via Bedrock)."""
     import anthropic
     import os
     import subprocess
 
-    client = anthropic.Anthropic()
+    client = _get_anthropic_client()
 
     system_prompt = f"""You are Rem, a security researcher performing a vulnerability audit on a codebase.
 
@@ -480,6 +508,7 @@ Files in repository:
         {
             "name": "ask_human",
             "description": "Ask the human operator a question and wait for their response. Use this when you need information only a human can provide: 2FA codes, CAPTCHAs, login instructions, clarification about the target, or any situation where you're stuck and need human guidance.",
+            "cache_control": {"type": "ephemeral"},
             "input_schema": {
                 "type": "object",
                 "properties": {
@@ -490,32 +519,47 @@ Files in repository:
         },
     ]
 
+    # Convert system prompt to content block format for prompt caching.
+    # System prompt + tools are static across all turns — cached after turn 1,
+    # read from cache on turns 2-N at 10% of input cost.
+    system_cached = [{"type": "text", "text": system_prompt, "cache_control": {"type": "ephemeral"}}]
+
     mcp_tools = [{"type": "mcp_toolset", "mcp_server_name": s["name"]} for s in MCP_SERVERS]
 
     turn = 0
     while True:
         turn += 1
 
-        # MCP servers can have transient failures — retry, then fall back without them
+        # MCP servers can have transient failures — retry, then fall back without them.
+        # Bedrock doesn't support MCP beta API, so use standard messages.create() directly.
         response = None
-        for attempt in range(3):
-            try:
-                response = client.beta.messages.create(
-                    model="claude-opus-4-6",
-                    max_tokens=4096,
-                    system=system_prompt,
-                    tools=[*tools, *mcp_tools] if attempt < 2 else tools,
-                    mcp_servers=MCP_SERVERS if attempt < 2 else [],
-                    messages=messages,
-                    betas=["mcp-client-2025-11-20"],
-                )
-                break
-            except Exception as e:
-                if attempt < 2 and "MCP" in str(e):
-                    import asyncio
-                    await asyncio.sleep(2)
-                    continue
-                raise
+        if _use_bedrock():
+            response = client.messages.create(
+                model=_get_model_id("claude-opus-4-6"),
+                max_tokens=4096,
+                system=system_cached,
+                tools=tools,
+                messages=messages,
+            )
+        else:
+            for attempt in range(3):
+                try:
+                    response = client.beta.messages.create(
+                        model="claude-opus-4-6",
+                        max_tokens=4096,
+                        system=system_cached,
+                        tools=[*tools, *mcp_tools] if attempt < 2 else tools,
+                        mcp_servers=MCP_SERVERS if attempt < 2 else [],
+                        messages=messages,
+                        betas=["mcp-client-2025-11-20"],
+                    )
+                    break
+                except Exception as e:
+                    if attempt < 2 and "MCP" in str(e):
+                        import asyncio
+                        await asyncio.sleep(2)
+                        continue
+                    raise
 
         assistant_content = response.content
         messages.append({"role": "assistant", "content": assistant_content})
@@ -739,13 +783,17 @@ def _build_opencode_config(agent: str) -> dict:
                         "apiKey": os.environ.get("NEMOTRON_API_KEY", "dummy"),
                     },
                     "models": {
-                        "model": {
-                            "name": "Nemotron",
+                        "nemotron-14b-ctf": {
+                            "name": "Nemotron-14B CTF",
+                            "limit": {
+                                "context": 131072,
+                                "output": 8192,
+                            },
                         },
                     },
                 },
             },
-            "model": "nemotron/model",
+            "model": "nemotron/nemotron-14b-ctf",
         }
     else:
         raise ValueError(f"Unknown OpenCode agent: {agent}")
@@ -1081,6 +1129,65 @@ async def _stream_opencode_events(
     except Exception as e:
         await _push_action(convex_url, deploy_key, scan_id, "observation",
             f"SSE stream error: {str(e)[:200]}")
+
+    # --- Post-SSE fallback: fetch session messages to catch anything missed ---
+    # Some models (especially Nemotron) produce output that only appears in
+    # message.part.delta (streaming tokens) without a corresponding
+    # message.part.updated event before session.idle fires.
+    try:
+        resp = await client.get(f"/session/{session_id}/message")
+        if resp.status_code == 200:
+            messages = resp.json()
+            if isinstance(messages, list):
+                for msg in messages:
+                    role = msg.get("role", "")
+                    if role != "assistant":
+                        continue
+                    parts = msg.get("parts", [])
+                    for part in parts:
+                        part_type = part.get("type", "")
+                        part_id = part.get("id", "")
+
+                        if part_type in ("text", "reasoning"):
+                            if part_id in seen_text_parts:
+                                continue
+                            seen_text_parts.add(part_id)
+                            text = part.get("text", "")
+                            if text.strip():
+                                action_type = "reasoning" if part_type == "reasoning" else "reasoning"
+                                await _push_action(convex_url, deploy_key, scan_id, action_type, text.strip())
+
+                        elif part_type == "tool":
+                            call_id = part.get("callID", part.get("id", ""))
+                            tool_name = part.get("tool", "unknown")
+                            state = part.get("state", {})
+                            status = state.get("status", "") if isinstance(state, dict) else ""
+                            title = state.get("title", "") if isinstance(state, dict) else ""
+                            input_data = state.get("input", {}) if isinstance(state, dict) else {}
+
+                            if call_id not in seen_tool_calls:
+                                seen_tool_calls.add(call_id)
+                                summary = title or tool_name
+                                await _push_action(convex_url, deploy_key, scan_id, "tool_call", {
+                                    "tool": tool_name,
+                                    "summary": summary,
+                                    "input": input_data if isinstance(input_data, dict) else {},
+                                })
+
+                            if status == "completed":
+                                output = state.get("output", "") if isinstance(state, dict) else ""
+                                content = str(output)[:50000]
+                                summary = title or f"{tool_name} returned {len(content):,} chars"
+                                await _push_action(convex_url, deploy_key, scan_id, "tool_result", {
+                                    "tool": tool_name,
+                                    "summary": f"{summary} ({len(content):,} chars)",
+                                    "content": content,
+                                })
+                                if tool_name == "submit_findings":
+                                    report_submitted = True
+    except Exception as e:
+        # Non-fatal — SSE may have captured everything already
+        pass
 
     if not report_submitted:
         await _push_action(convex_url, deploy_key, scan_id, "observation",
@@ -1753,11 +1860,11 @@ async def _run_web_claude_agent(
     convex_url: str,
     deploy_key: str,
 ):
-    """Run web pentesting using Claude Opus 4.6 with Playwright browser tools."""
+    """Run web pentesting using Claude Opus 4.6 (or equivalent via Bedrock) with Playwright browser tools."""
     import anthropic
     import json
 
-    client = anthropic.Anthropic()
+    client = _get_anthropic_client()
 
     auth_info = ""
     if test_account:
@@ -1916,6 +2023,7 @@ When you call submit_findings, each vulnerability should be its own entry in the
         {
             "name": "ask_human",
             "description": "Ask the human operator a question and wait for their response. Use this when you need information only a human can provide: 2FA codes, CAPTCHAs, login instructions, clarification about the target, or any situation where you're stuck and need human guidance.",
+            "cache_control": {"type": "ephemeral"},
             "input_schema": {
                 "type": "object",
                 "properties": {
@@ -1926,32 +2034,45 @@ When you call submit_findings, each vulnerability should be its own entry in the
         },
     ]
 
+    # Convert system prompt to content block format for prompt caching.
+    system_cached = [{"type": "text", "text": system_prompt, "cache_control": {"type": "ephemeral"}}]
+
     mcp_tools = [{"type": "mcp_toolset", "mcp_server_name": s["name"]} for s in MCP_SERVERS]
 
     turn = 0
     while True:
         turn += 1
 
-        # MCP servers can have transient failures — retry, then fall back without them
+        # MCP servers can have transient failures — retry, then fall back without them.
+        # Bedrock doesn't support MCP beta API, so use standard messages.create() directly.
         response = None
-        for attempt in range(3):
-            try:
-                response = client.beta.messages.create(
-                    model="claude-opus-4-6",
-                    max_tokens=4096,
-                    system=system_prompt,
-                    tools=[*tools, *mcp_tools] if attempt < 2 else tools,
-                    mcp_servers=MCP_SERVERS if attempt < 2 else [],
-                    messages=messages,
-                    betas=["mcp-client-2025-11-20"],
-                )
-                break
-            except Exception as e:
-                if attempt < 2 and "MCP" in str(e):
-                    import asyncio
-                    await asyncio.sleep(2)
-                    continue
-                raise
+        if _use_bedrock():
+            response = client.messages.create(
+                model=_get_model_id("claude-opus-4-6"),
+                max_tokens=4096,
+                system=system_cached,
+                tools=tools,
+                messages=messages,
+            )
+        else:
+            for attempt in range(3):
+                try:
+                    response = client.beta.messages.create(
+                        model="claude-opus-4-6",
+                        max_tokens=4096,
+                        system=system_cached,
+                        tools=[*tools, *mcp_tools] if attempt < 2 else tools,
+                        mcp_servers=MCP_SERVERS if attempt < 2 else [],
+                        messages=messages,
+                        betas=["mcp-client-2025-11-20"],
+                    )
+                    break
+                except Exception as e:
+                    if attempt < 2 and "MCP" in str(e):
+                        import asyncio
+                        await asyncio.sleep(2)
+                        continue
+                    raise
 
         assistant_content = response.content
         messages.append({"role": "assistant", "content": assistant_content})

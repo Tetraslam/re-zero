@@ -7,6 +7,7 @@ import { Id } from "../../../../../convex/_generated/dataModel";
 import Link from "next/link";
 import { useMemo, useState, useEffect } from "react";
 import { useMinLoading } from "@/hooks/use-min-loading";
+import { useApiKey } from "@/hooks/use-api-key";
 
 const AGENTS = ["opus", "glm", "nemotron"] as const;
 const AGENT_LABELS: Record<string, string> = {
@@ -52,6 +53,7 @@ export default function ProjectPage() {
   const reports = useQuery(api.reports.listByProject, { projectId });
   const createScan = useMutation(api.scans.create);
   const updateTargetConfig = useMutation(api.projects.updateTargetConfig);
+  const apiKey = useApiKey();
 
   const [starting, setStarting] = useState(false);
   const [selectedScanId, setSelectedScanId] = useState<string | null>(null);
@@ -130,13 +132,16 @@ export default function ProjectPage() {
   }, [selectedScanId, scans, reportByScan]);
 
   const handleStartScan = async (agent: "opus" | "glm" | "nemotron") => {
-    if (!project) return;
+    if (!project || !apiKey) return;
     setStarting(true);
     const scanId = await createScan({ projectId, agent });
     try {
       await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/scans/start`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "X-API-Key": apiKey,
+        },
         body: JSON.stringify({
           scan_id: scanId,
           project_id: projectId,

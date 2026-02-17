@@ -2,13 +2,14 @@
 
 import logging
 
-from fastapi import APIRouter, BackgroundTasks
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel
 
 import modal
 
+from ..auth import AuthContext, require_api_key
 from ..config import settings
-from ..convex_client import convex_mutation
+from ..convex_client import convex_mutation, convex_query
 
 logger = logging.getLogger(__name__)
 
@@ -107,8 +108,18 @@ async def _launch_scan(req: StartScanRequest):
 
 
 @router.post("/start")
-async def start_scan(req: StartScanRequest, background_tasks: BackgroundTasks):
+async def start_scan(
+    req: StartScanRequest,
+    background_tasks: BackgroundTasks,
+    auth: AuthContext = Depends(require_api_key),
+):
     """Called when a scan is created. Spins up the Modal sandbox."""
+    # Verify the user owns this project
+    project_result = await convex_query("projects:get", {"projectId": req.project_id})
+    project = project_result.get("value", project_result) if isinstance(project_result, dict) else project_result
+    if not project or project.get("userId") != auth.user_id:
+        raise HTTPException(status_code=403, detail="Not your project")
+
     background_tasks.add_task(_launch_scan, req)
     return {"status": "started", "scan_id": req.scan_id}
 
