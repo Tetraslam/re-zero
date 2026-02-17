@@ -82,8 +82,6 @@ export default function DashboardPage() {
               <span className="w-56 text-xs text-muted-foreground truncate hidden sm:block">
                 {project.targetType === "oss" && project.targetConfig?.repoUrl}
                 {project.targetType === "web" && project.targetConfig?.url}
-                {project.targetType === "hardware" && project.targetConfig?.device}
-                {project.targetType === "fpga" && "fpga target"}
               </span>
               <span className="w-24 text-xs text-muted-foreground text-right tabular-nums">
                 {new Date(project.createdAt).toLocaleDateString()}

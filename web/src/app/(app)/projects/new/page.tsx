@@ -10,11 +10,9 @@ import Link from "next/link";
 const TARGET_TYPES = [
   { value: "oss" as const, label: "Source code", description: "Clone and audit a public GitHub repository" },
   { value: "web" as const, label: "Web application", description: "Browser-based pentesting of a live URL" },
-  { value: "hardware" as const, label: "Hardware", description: "ESP32, drones, serial protocol analysis" },
-  { value: "fpga" as const, label: "FPGA", description: "Side-channel analysis and voltage glitching" },
 ];
 
-type TargetType = "oss" | "web" | "hardware" | "fpga";
+type TargetType = "oss" | "web";
 
 export default function NewProjectPage() {
   const { user } = useCurrentUser();
@@ -28,7 +26,6 @@ export default function NewProjectPage() {
   const [webUsername, setWebUsername] = useState("");
   const [webPassword, setWebPassword] = useState("");
   const [webContext, setWebContext] = useState("");
-  const [device, setDevice] = useState<"esp32" | "drone">("esp32");
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async () => {
@@ -42,9 +39,6 @@ export default function NewProjectPage() {
       ...(webUsername ? { testAccount: { username: webUsername, password: webPassword } } : {}),
       ...(webContext.trim() ? { context: webContext.trim() } : {}),
     };
-    if (targetType === "hardware") targetConfig = { device };
-    if (targetType === "fpga") targetConfig = {};
-
     const id = await createProject({
       userId: user._id,
       name: name.trim(),
@@ -177,27 +171,6 @@ export default function NewProjectPage() {
               <p className="text-xs text-muted-foreground/40 mt-1.5">
                 Anything Rem should know — hidden routes, tech stack, areas of concern, how to use the test account.
               </p>
-            </div>
-          </div>
-        )}
-
-        {targetType === "hardware" && (
-          <div>
-            <label className="text-xs text-muted-foreground block mb-3">Device</label>
-            <div className="flex gap-3">
-              {(["esp32", "drone"] as const).map((d) => (
-                <button
-                  key={d}
-                  onClick={() => setDevice(d)}
-                  className={`border px-4 py-2.5 text-sm transition-all duration-100 ${
-                    device === d
-                      ? "border-rem bg-rem/8 text-rem"
-                      : "border-border hover:border-rem/40"
-                  }`}
-                >
-                  {d}
-                </button>
-              ))}
             </div>
           </div>
         )}

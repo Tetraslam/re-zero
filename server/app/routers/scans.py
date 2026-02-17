@@ -101,14 +101,6 @@ async def _launch_scan(req: StartScanRequest):
                 convex_deploy_key=settings.convex_deploy_key,
             )
 
-        elif req.target_type in ("hardware", "fpga"):
-            # TODO: Hardware/FPGA gateway integration
-            await convex_mutation("actions:push", {
-                "scanId": req.scan_id,
-                "type": "observation",
-                "payload": f"{req.target_type} target not yet implemented.",
-            })
-
     except Exception as e:
         logger.exception(f"Scan {req.scan_id} failed")
         await convex_mutation("scans:updateStatus", {

@@ -105,69 +105,6 @@ function WebVisual() {
   );
 }
 
-function DroneVisual() {
-  return (
-    <svg viewBox="0 0 200 200" fill="none" className="w-full max-w-[200px] sm:max-w-[240px] mx-auto">
-      <line x1="34" y1="34" x2="84" y2="84" stroke="#6b82ff" strokeWidth="1.5" opacity="0.6" />
-      <line x1="166" y1="34" x2="116" y2="84" stroke="#6b82ff" strokeWidth="1.5" opacity="0.6" />
-      <line x1="34" y1="166" x2="84" y2="116" stroke="#6b82ff" strokeWidth="1.5" opacity="0.6" />
-      <line x1="166" y1="166" x2="116" y2="116" stroke="#6b82ff" strokeWidth="1.5" opacity="0.6" />
-      <rect x="82" y="82" width="36" height="36" stroke="#6b82ff" strokeWidth="1.5" fill="none" opacity="0.7" />
-      <circle cx="34" cy="34" r="22" stroke="#6b82ff" strokeWidth="1" opacity="0.5" />
-      <circle cx="166" cy="34" r="22" stroke="#6b82ff" strokeWidth="1" opacity="0.5" />
-      <circle cx="34" cy="166" r="22" stroke="#6b82ff" strokeWidth="1" opacity="0.5" />
-      <circle cx="166" cy="166" r="22" stroke="#6b82ff" strokeWidth="1" opacity="0.5" />
-      <circle cx="34" cy="34" r="2.5" fill="#6b82ff" opacity="0.8" />
-      <circle cx="166" cy="34" r="2.5" fill="#6b82ff" opacity="0.8" />
-      <circle cx="34" cy="166" r="2.5" fill="#6b82ff" opacity="0.8" />
-      <circle cx="166" cy="166" r="2.5" fill="#6b82ff" opacity="0.8" />
-      <circle cx="100" cy="100" r="40" stroke="#6b82ff" strokeWidth="0.8" opacity="0">
-        <animate attributeName="r" from="40" to="96" dur="3s" repeatCount="indefinite" />
-        <animate attributeName="opacity" from="0.3" to="0" dur="3s" repeatCount="indefinite" />
-      </circle>
-      <circle cx="100" cy="100" r="40" stroke="#6b82ff" strokeWidth="0.8" opacity="0">
-        <animate attributeName="r" from="40" to="96" dur="3s" begin="1s" repeatCount="indefinite" />
-        <animate attributeName="opacity" from="0.3" to="0" dur="3s" begin="1s" repeatCount="indefinite" />
-      </circle>
-      <circle cx="100" cy="100" r="40" stroke="#6b82ff" strokeWidth="0.8" opacity="0">
-        <animate attributeName="r" from="40" to="96" dur="3s" begin="2s" repeatCount="indefinite" />
-        <animate attributeName="opacity" from="0.3" to="0" dur="3s" begin="2s" repeatCount="indefinite" />
-      </circle>
-      <text x="100" y="196" fill="#cfd2e3" fontSize="7" fontFamily="monospace" textAnchor="middle" opacity="0.55">
-        MAVLink v2
-      </text>
-    </svg>
-  );
-}
-
-function FpgaVisual() {
-  return (
-    <svg viewBox="0 0 400 130" fill="none" className="w-full" preserveAspectRatio="xMidYMid meet">
-      <line x1="0" y1="30" x2="400" y2="30" stroke="#6b82ff" strokeWidth="0.3" opacity="0.15" />
-      <line x1="0" y1="60" x2="400" y2="60" stroke="#6b82ff" strokeWidth="0.3" opacity="0.15" />
-      <line x1="0" y1="90" x2="400" y2="90" stroke="#6b82ff" strokeWidth="0.3" opacity="0.15" />
-      <polyline
-        className="power-trace"
-        style={{ strokeDasharray: 1200, strokeDashoffset: 1200 }}
-        points="0,60 10,61 20,59 30,60 40,61 50,60 60,58 65,55 70,18 73,80 76,22 79,75 82,28 85,70 88,55 93,58 100,60 110,61 120,59 130,60 140,61 150,60 155,58 160,55 165,20 168,78 171,24 174,73 177,30 180,68 183,55 188,58 195,60 205,61 215,59 225,60 235,61 245,60 250,58 255,55 260,22 263,76 266,26 269,72 272,32 275,66 278,55 283,58 290,60 300,61 310,59 320,60 330,61 340,58 345,55 350,19 353,79 356,23 359,74 362,29 365,69 368,55 373,58 380,60 390,61 400,60"
-        stroke="#6b82ff"
-        strokeWidth="1.5"
-        opacity="0.7"
-      />
-      <text className="key-anno" x="76" y="108" fill="#dc4242" fontSize="7" fontFamily="monospace" opacity="0">0x4F</text>
-      <text className="key-anno" x="171" y="108" fill="#dc4242" fontSize="7" fontFamily="monospace" opacity="0">0x68</text>
-      <text className="key-anno" x="266" y="108" fill="#dc4242" fontSize="7" fontFamily="monospace" opacity="0">0xE8</text>
-      <text className="key-anno" x="359" y="108" fill="#dc4242" fontSize="7" fontFamily="monospace" opacity="0">0xA1</text>
-      <line x1="0" y1="0" x2="0" y2="130" stroke="#6b82ff" strokeWidth="1" opacity="0.35">
-        <animate attributeName="x1" from="0" to="400" dur="4s" repeatCount="indefinite" />
-        <animate attributeName="x2" from="0" to="400" dur="4s" repeatCount="indefinite" />
-      </line>
-      <text x="0" y="126" fill="#cfd2e3" fontSize="6" fontFamily="monospace" opacity="0.5">power (mW)</text>
-      <text x="375" y="126" fill="#cfd2e3" fontSize="6" fontFamily="monospace" opacity="0.5">time</text>
-    </svg>
-  );
-}
-
 /* ── Mode data ───────────────────────────────────────── */
 const MODES = [
   {
@@ -182,25 +119,11 @@ const MODES = [
     tagline: "your browser, her weapon",
     desc: "Rem takes the wheel of a headless browser and attacks your web app like a human pentester. She navigates pages, fills forms, injects payloads, and discovers XSS, CSRF, SSRF, IDOR \u2014 the full OWASP top 10.",
   },
-  {
-    id: "hardware",
-    cmd: "hardware",
-    tagline: "intercept the signal, own the sky",
-    desc: "Connect a drone, ESP32, or any device via gateway. Rem extracts firmware, fuzzes MAVLink and serial protocols, and probes for radio vulnerabilities. Full flight controller analysis from a sandboxed environment.",
-  },
-  {
-    id: "fpga",
-    cmd: "fpga",
-    tagline: "your power trace betrays your key",
-    desc: "Side-channel attacks on hardware crypto. Rem monitors power consumption during AES-256 operations, applies differential power analysis, and extracts the full encryption key byte by byte.",
-  },
 ];
 
 const MODE_VISUAL: Record<string, React.ReactNode> = {
   oss: <OssVisual />,
   web: <WebVisual />,
-  hardware: <DroneVisual />,
-  fpga: <FpgaVisual />,
 };
 
 /* ── Main component ──────────────────────────────────── */
@@ -254,25 +177,6 @@ export function LandingContent() {
                 ease: "outExpo",
               });
 
-              // FPGA: draw the power trace
-              if (id === "mode-fpga") {
-                const trace = entry.target.querySelector(".power-trace");
-                if (trace) {
-                  animate(trace, {
-                    strokeDashoffset: [1200, 0],
-                    delay: 500,
-                    duration: 2500,
-                    ease: "outQuart",
-                  });
-                }
-                animate(entry.target.querySelectorAll(".key-anno"), {
-                  opacity: [0, 1],
-                  translateY: [4, 0],
-                  delay: stagger(200, { start: 2800 }),
-                  duration: 600,
-                  ease: "outQuart",
-                });
-              }
             }
 
             if (id === "closing") {
@@ -572,7 +476,7 @@ export function LandingContent() {
 
         <div className="close-inner relative z-10 flex-1 flex flex-col items-center justify-center gap-8 opacity-0">
           <span className="text-[11px] text-muted-foreground font-mono tracking-widest">
-            OPUS 4.6 &middot; GLM-4.7V &middot; NEMOTRON
+            OPUS 4.6 &middot; GLM-4.6V &middot; NEMOTRON
           </span>
 
           <h2 className="text-4xl sm:text-6xl font-semibold tracking-tight text-center">

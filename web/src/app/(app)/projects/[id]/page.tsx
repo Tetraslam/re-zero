@@ -208,12 +208,6 @@ export default function ProjectPage() {
               </button>
             </>
           )}
-          {project.targetType === "hardware" && (
-            <span className="text-xs text-muted-foreground truncate">{project.targetConfig?.device}</span>
-          )}
-          {project.targetType === "fpga" && (
-            <span className="text-xs text-muted-foreground truncate">fpga target</span>
-          )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {AGENTS.map((agent) => {
