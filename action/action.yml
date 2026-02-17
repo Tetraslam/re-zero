@@ -1,0 +1,179 @@
+name: 'Rem Security Gate'
+description: 'Fast AI-powered security check on your PRs and pushes'
+branding:
+  icon: 'shield'
+  color: 'blue'
+
+inputs:
+  api-key:
+    description: 'Re:Zero API key (re0_*)'
+    required: true
+  fail-on:
+    description: 'Comma-separated severity levels that block the PR'
+    required: false
+    default: 'critical,high'
+  server-url:
+    description: 'Server URL override'
+    required: false
+    default: 'https://api.rezero.sh'
+
+outputs:
+  findings-count:
+    description: 'Number of findings'
+    value: ${{ steps.scan.outputs.findings_count }}
+  findings-json:
+    description: 'Full findings as JSON'
+    value: ${{ steps.scan.outputs.findings_json }}
+  blocked:
+    description: 'Whether the gate blocked'
+    value: ${{ steps.scan.outputs.blocked }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Generate diff
+      id: diff
+      shell: bash
+      run: |
+        if [ "${{ github.event_name }}" = "pull_request" ]; then
+          git fetch --depth=1 origin "${{ github.event.pull_request.base.sha }}" 2>/dev/null || true
+          DIFF=$(git diff "${{ github.event.pull_request.base.sha }}"..."${{ github.sha }}" 2>/dev/null || git diff HEAD~1 HEAD 2>/dev/null || echo "")
+        else
+          DIFF=$(git diff HEAD~1 HEAD 2>/dev/null || echo "")
+        fi
+
+        if [ -z "$DIFF" ]; then
+          echo "empty=true" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+
+        echo "$DIFF" > /tmp/rem-gate-diff.txt
+        echo "empty=false" >> "$GITHUB_OUTPUT"
+
+    - name: Run gate scan
+      id: scan
+      if: steps.diff.outputs.empty != 'true'
+      shell: bash
+      run: |
+        DIFF_CONTENT=$(cat /tmp/rem-gate-diff.txt)
+
+        # Build JSON payload with jq for proper escaping
+        PR_NUM="${{ github.event.pull_request.number }}"
+        PAYLOAD=$(jq -n \
+          --arg diff "$DIFF_CONTENT" \
+          --arg repo_name "${{ github.repository }}" \
+          --arg repo_url "https://github.com/${{ github.repository }}" \
+          --arg commit_sha "${{ github.sha }}" \
+          --arg event_type "${{ github.event_name }}" \
+          --argjson pr_number "${PR_NUM:-null}" \
+          '{diff: $diff, repo_name: $repo_name, repo_url: $repo_url, commit_sha: $commit_sha, event_type: $event_type, pr_number: $pr_number}')
+
+        RESPONSE=$(curl -s -w "\n%{http_code}" \
+          -X POST \
+          -H "Content-Type: application/json" \
+          -H "X-API-Key: ${{ inputs.api-key }}" \
+          --max-time 30 \
+          -d "$PAYLOAD" \
+          "${{ inputs.server-url }}/gate/scan")
+
+        HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+        BODY=$(echo "$RESPONSE" | sed '$d')
+
+        if [ "$HTTP_CODE" = "401" ]; then
+          echo "::error::Invalid API key. Check your REM_API_KEY secret."
+          exit 2
+        fi
+
+        if [ "$HTTP_CODE" = "402" ]; then
+          echo "::error::Payment required. Set up billing at https://rezero.sh/billing"
+          exit 2
+        fi
+
+        if [ "$HTTP_CODE" != "200" ]; then
+          echo "::error::Gate scan failed (HTTP $HTTP_CODE): $BODY"
+          exit 2
+        fi
+
+        # Parse response
+        FINDINGS_COUNT=$(echo "$BODY" | jq '.findings | length')
+        SUMMARY=$(echo "$BODY" | jq -r '.summary')
+        DURATION=$(echo "$BODY" | jq -r '.scan_duration_ms')
+
+        echo "findings_count=$FINDINGS_COUNT" >> "$GITHUB_OUTPUT"
+        echo "findings_json=$(echo "$BODY" | jq -c '.findings')" >> "$GITHUB_OUTPUT"
+
+        # ── No findings ──
+        if [ "$FINDINGS_COUNT" -eq 0 ]; then
+          echo ""
+          echo "Rem gate passed. No issues in this diff."
+
+          DRIFT_MSG=$(echo "$BODY" | jq -r '.drift.message // empty')
+          if [ -n "$DRIFT_MSG" ]; then
+            echo ""
+            echo "$DRIFT_MSG"
+          fi
+
+          echo ""
+          echo "  (${DURATION}ms)"
+          echo "blocked=false" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+
+        # ── Findings present ──
+        echo ""
+        echo "Rem gate: $FINDINGS_COUNT issue(s) found"
+        echo ""
+
+        # Print each finding
+        echo "$BODY" | jq -r '.findings[] | "  \(.severity | ascii_upcase)  \(.title)\(if .location then " in " + .location else "" end)"'
+
+        echo ""
+        echo "  Gate scans check for common vulnerability patterns."
+        echo "  Deep scans test auth bypasses, logic flaws, and"
+        echo "  multi-step attack chains."
+
+        # Drift / deep scan nudge
+        LAST_DEEP=$(echo "$BODY" | jq -r '.drift.last_deep_scan_days_ago // empty')
+        if [ -z "$LAST_DEEP" ] || [ "$LAST_DEEP" = "null" ]; then
+          echo "  Last deep scan: never."
+        else
+          echo "  Last deep scan: ${LAST_DEEP} days ago."
+        fi
+
+        echo ""
+        echo "  Run: rem scan --deep"
+        echo "  Override: add \`rem:accept\` label"
+        echo "  Configure: .rem.yml"
+        echo ""
+
+        # Check if any finding matches fail-on severities
+        FAIL_ON="${{ inputs.fail-on }}"
+        BLOCKED="false"
+        IFS=',' read -ra SEVERITIES <<< "$FAIL_ON"
+        for sev in "${SEVERITIES[@]}"; do
+          sev=$(echo "$sev" | xargs)
+          COUNT=$(echo "$BODY" | jq --arg s "$sev" '[.findings[] | select(.severity == $s)] | length')
+          if [ "$COUNT" -gt 0 ]; then
+            BLOCKED="true"
+            break
+          fi
+        done
+
+        echo "blocked=$BLOCKED" >> "$GITHUB_OUTPUT"
+
+        if [ "$BLOCKED" = "true" ]; then
+          echo "  Blocked (policy: fail on $FAIL_ON)"
+          echo "  (${DURATION}ms)"
+          exit 1
+        fi
+
+        echo "  (${DURATION}ms)"
+
+    - name: No diff detected
+      if: steps.diff.outputs.empty == 'true'
+      shell: bash
+      run: |
+        echo "Rem gate: no diff detected, skipping."
+        echo "findings_count=0" >> "$GITHUB_OUTPUT"
+        echo "findings_json=[]" >> "$GITHUB_OUTPUT"
+        echo "blocked=false" >> "$GITHUB_OUTPUT"

@@ -59,6 +59,41 @@ export const archive = mutation({
   },
 });
 
+export const getLastScanDate = query({
+  args: {
+    userId: v.id("users"),
+    repoUrl: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Find project by repoUrl (same pattern as findOrCreate)
+    const projects = await ctx.db
+      .query("projects")
+      .withIndex("by_user_and_status", (q) =>
+        q.eq("userId", args.userId).eq("status", "active")
+      )
+      .collect();
+
+    const project = projects.find(
+      (p) => p.targetConfig?.repoUrl === args.repoUrl
+    );
+    if (!project) return null;
+
+    // Find most recent completed scan
+    const scans = await ctx.db
+      .query("scans")
+      .withIndex("by_project", (q) => q.eq("projectId", project._id))
+      .order("desc")
+      .collect();
+
+    const lastCompleted = scans.find((s) => s.status === "completed");
+    if (!lastCompleted) return { lastScanAt: null };
+
+    return {
+      lastScanAt: lastCompleted.finishedAt ?? lastCompleted.startedAt,
+    };
+  },
+});
+
 export const findOrCreate = mutation({
   args: {
     userId: v.id("users"),

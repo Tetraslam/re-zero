@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.routers import scans, gateways
+from app.routers import scans, gateways, gate
 
 app = FastAPI(title="Re:Zero Server", version="0.1.0")
 
@@ -20,6 +20,7 @@ app.add_middleware(
 
 app.include_router(scans.router)
 app.include_router(gateways.router)
+app.include_router(gate.router)
 
 
 @app.get("/health")

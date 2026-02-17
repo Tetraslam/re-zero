@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "anthropic[bedrock]>=0.80.0",
     "convex>=0.7.0",
     "fastapi>=0.129.0",
     "httpx>=0.28.1",

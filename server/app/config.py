@@ -8,6 +8,8 @@ class Settings(BaseSettings):
     modal_token_secret: str = ""
     frontend_url: str = "http://localhost:3000"
     autumn_secret_key: str = ""
+    use_bedrock: bool = False
+    aws_region: str = "us-west-2"
 
     model_config = {"env_file": ".env"}
 

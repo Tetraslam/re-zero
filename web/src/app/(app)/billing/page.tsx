@@ -93,13 +93,13 @@ export default function BillingPage() {
             <button
               onClick={() =>
                 checkout({
-                  productId: "deep-pack",
+                  productId: "bulk-pack",
                   dialog: CheckoutDialog,
                 })
               }
               className="text-sm border border-border px-3 py-2 hover:border-rem/30 transition-colors duration-100 flex-1"
             >
-              <span className="block font-medium">10 deep scans</span>
+              <span className="block font-medium">25 scans</span>
               <span className="block text-xs text-muted-foreground mt-1">
                 25% off
               </span>
