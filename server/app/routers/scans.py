@@ -25,7 +25,9 @@ class StartScanRequest(BaseModel):
 
 
 class LaunchScanRequest(BaseModel):
-    repo_url: str
+    repo_url: str | None = None
+    storage_id: str | None = None
+    repo_name: str | None = None
     target_type: str = "oss"
     agent: str = "opus"
 
@@ -53,8 +55,9 @@ async def _launch_scan(req: StartScanRequest):
 
         if req.target_type == "oss":
             repo_url = req.target_config.get("repoUrl", "")
-            if not repo_url:
-                raise ValueError("Missing repoUrl in target config")
+            storage_id = req.target_config.get("storageId", "")
+            if not repo_url and not storage_id:
+                raise ValueError("Missing repoUrl or storageId in target config")
 
             # Route to correct Modal function based on agent
             if req.agent == "opus":
@@ -65,7 +68,8 @@ async def _launch_scan(req: StartScanRequest):
             await fn.remote.aio(
                 scan_id=req.scan_id,
                 project_id=req.project_id,
-                repo_url=repo_url,
+                repo_url=repo_url or "",
+                storage_id=storage_id or "",
                 agent=req.agent,
                 convex_url=settings.convex_url,
                 convex_deploy_key=settings.convex_deploy_key,
@@ -137,10 +141,20 @@ async def launch_scan(
     auth: AuthContext = Depends(require_api_key),
 ):
     """All-in-one: find/create project, create scan, start Modal."""
-    # 1. Find or create project by repo URL
+    # Validate: exactly one of repo_url or storage_id
+    if not req.repo_url and not req.storage_id:
+        raise HTTPException(400, "Either repo_url or storage_id is required")
+    if req.repo_url and req.storage_id:
+        raise HTTPException(400, "Provide repo_url or storage_id, not both")
+
+    # Determine display name and repo URL for project lookup
+    display_name = req.repo_name or req.repo_url or "local-upload"
+    project_repo_url = req.repo_url or f"local://{display_name}"
+
+    # 1. Find or create project
     project_result = await convex_mutation("projects:findOrCreate", {
         "userId": auth.user_id,
-        "repoUrl": req.repo_url,
+        "repoUrl": project_repo_url,
         "targetType": req.target_type,
     })
     project_id = project_result.get("value", project_result) if isinstance(project_result, dict) else project_result
@@ -154,7 +168,11 @@ async def launch_scan(
 
     # 3. Build target config and launch
     if req.target_type == "oss":
-        target_config = {"repoUrl": req.repo_url}
+        target_config = {}
+        if req.repo_url:
+            target_config["repoUrl"] = req.repo_url
+        if req.storage_id:
+            target_config["storageId"] = req.storage_id
     else:
         raise HTTPException(400, "Only 'oss' target type supported via CLI for now")
 
@@ -207,6 +225,14 @@ async def poll_scan(
         "actions": actions or [],
         "report": report,
     }
+
+
+@router.post("/upload-url")
+async def get_upload_url(auth: AuthContext = Depends(require_api_key)):
+    """Get a presigned URL for uploading a tarball to Convex storage."""
+    result = await convex_mutation("storage:generateUploadUrl", {})
+    url = result.get("value", result) if isinstance(result, dict) else result
+    return {"upload_url": url}
 
 
 @router.post("/verify")

@@ -101,18 +101,29 @@ async def run_oss_scan(
     agent: str,
     convex_url: str,
     convex_deploy_key: str,
+    storage_id: str = "",
 ):
     """Run an OSS security scan in a Modal sandbox."""
     import subprocess
+    import os
 
     work_dir = "/root/target"
 
-    await _push_action(convex_url, convex_deploy_key, scan_id, "observation", "Rem is cloning the repository...")
-    subprocess.run(
-        ["git", "clone", "--depth=1", repo_url, work_dir],
-        check=True,
-        capture_output=True,
-    )
+    if storage_id:
+        # Tarball upload flow — download from Convex storage and extract
+        await _push_action(convex_url, convex_deploy_key, scan_id, "observation", "Rem is downloading the uploaded code...")
+        url = await _get_storage_url(convex_url, convex_deploy_key, storage_id)
+        subprocess.run(["curl", "-sL", "-o", "/tmp/repo.tar.gz", url], check=True, capture_output=True)
+        os.makedirs(work_dir, exist_ok=True)
+        subprocess.run(["tar", "xzf", "/tmp/repo.tar.gz", "-C", work_dir], check=True, capture_output=True)
+    else:
+        # Git clone flow
+        await _push_action(convex_url, convex_deploy_key, scan_id, "observation", "Rem is cloning the repository...")
+        subprocess.run(
+            ["git", "clone", "--depth=1", repo_url, work_dir],
+            check=True,
+            capture_output=True,
+        )
 
     result = subprocess.run(
         ["find", work_dir, "-type", "f", "-not", "-path", "*/.git/*"],
@@ -121,9 +132,10 @@ async def run_oss_scan(
     )
     file_list = result.stdout.strip().split("\n")[:200]
 
+    source_label = repo_url if repo_url else "uploaded tarball"
     await _push_action(
         convex_url, convex_deploy_key, scan_id, "observation",
-        f"Rem cloned {repo_url} — {len(file_list)} files indexed"
+        f"Rem loaded {source_label} — {len(file_list)} files indexed"
     )
 
     if agent == "opus":
@@ -175,6 +187,17 @@ async def _convex_query(convex_url: str, deploy_key: str, path: str, args: dict)
         )
         resp.raise_for_status()
         return resp.json()
+
+
+async def _get_storage_url(convex_url: str, deploy_key: str, storage_id: str) -> str:
+    """Get a download URL for a file in Convex storage."""
+    result = await _convex_query(convex_url, deploy_key, "storage:getUrl", {
+        "storageId": storage_id,
+    })
+    url = result.get("value", result) if isinstance(result, dict) else result
+    if not url:
+        raise ValueError(f"Failed to get storage URL for {storage_id}")
+    return url
 
 
 async def _ask_human(
@@ -1677,18 +1700,27 @@ async def run_oss_scan_opencode(
     agent: str,
     convex_url: str,
     convex_deploy_key: str,
+    storage_id: str = "",
 ):
     """Run an OSS security scan using OpenCode (GLM-4.6V or Nemotron)."""
     import subprocess
+    import os
 
     work_dir = "/root/target"
 
-    await _push_action(convex_url, convex_deploy_key, scan_id, "observation", "Rem is cloning the repository...")
-    subprocess.run(
-        ["git", "clone", "--depth=1", repo_url, work_dir],
-        check=True,
-        capture_output=True,
-    )
+    if storage_id:
+        await _push_action(convex_url, convex_deploy_key, scan_id, "observation", "Rem is downloading the uploaded code...")
+        url = await _get_storage_url(convex_url, convex_deploy_key, storage_id)
+        subprocess.run(["curl", "-sL", "-o", "/tmp/repo.tar.gz", url], check=True, capture_output=True)
+        os.makedirs(work_dir, exist_ok=True)
+        subprocess.run(["tar", "xzf", "/tmp/repo.tar.gz", "-C", work_dir], check=True, capture_output=True)
+    else:
+        await _push_action(convex_url, convex_deploy_key, scan_id, "observation", "Rem is cloning the repository...")
+        subprocess.run(
+            ["git", "clone", "--depth=1", repo_url, work_dir],
+            check=True,
+            capture_output=True,
+        )
 
     result = subprocess.run(
         ["find", work_dir, "-type", "f", "-not", "-path", "*/.git/*"],
@@ -1697,9 +1729,10 @@ async def run_oss_scan_opencode(
     )
     file_list = result.stdout.strip().split("\n")[:200]
 
+    source_label = repo_url if repo_url else "uploaded tarball"
     await _push_action(
         convex_url, convex_deploy_key, scan_id, "observation",
-        f"Rem cloned {repo_url} — {len(file_list)} files indexed"
+        f"Rem loaded {source_label} — {len(file_list)} files indexed"
     )
 
     await _run_opencode_agent(

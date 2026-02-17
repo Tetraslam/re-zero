@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { loadConfig, getApiKey, getServerUrl } from "./config.js";
 
 let _apiKey: string | undefined;
@@ -59,4 +60,49 @@ export async function apiGet<T>(path: string, params?: Record<string, string>): 
   }
 
   return res.json() as Promise<T>;
+}
+
+export async function getUploadUrl(): Promise<string> {
+  if (!_apiKey || !_serverUrl) await init();
+
+  const res = await fetch(`${_serverUrl}/scans/upload-url`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-API-Key": _apiKey!,
+    },
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Failed to get upload URL: ${text}`);
+  }
+
+  const data = (await res.json()) as { upload_url: string };
+  return data.upload_url;
+}
+
+export async function uploadTarball(tarballPath: string): Promise<string> {
+  const uploadUrl = await getUploadUrl();
+  const tarballBytes = readFileSync(tarballPath);
+
+  const res = await fetch(uploadUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/gzip" },
+    body: tarballBytes,
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Failed to upload tarball: ${text}`);
+  }
+
+  const text = await res.text();
+  try {
+    const data = JSON.parse(text);
+    if (typeof data === "object" && data.storageId) return data.storageId;
+    return String(data);
+  } catch {
+    return text.trim().replace(/^"|"$/g, "");
+  }
 }
