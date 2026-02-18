@@ -11,7 +11,9 @@
   ],
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch"
+    "dev": "tsc --watch",
+    "release": "npm version minor --no-git-tag-version && npm run build && npm publish",
+    "release:major": "npm version major --no-git-tag-version && npm run build && npm publish"
   },
   "engines": {
     "node": ">=18.0.0"
