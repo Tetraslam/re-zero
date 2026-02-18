@@ -7,9 +7,6 @@ const BILLING_URL = typeof window !== "undefined" ? `${window.location.origin}/b
 export default function BillingPage() {
   const { customer, checkout, openBillingPortal, isLoading } = useCustomer();
 
-  // Debug: remove once billing is confirmed working
-  if (customer) console.log("[billing] customer:", JSON.stringify(customer, null, 2));
-
   if (isLoading) {
     return (
       <div className="max-w-2xl mx-auto px-6 py-12">
@@ -23,13 +20,8 @@ export default function BillingPage() {
     (p: any) => p.status === "active"
   );
 
-  const features = Array.isArray(customer?.features) ? customer.features : [];
-  const scanFeature = features.find(
-    (f: any) => f.feature_id === "scan"
-  );
-  const gateFeature = features.find(
-    (f: any) => f.feature_id === "gate_scan"
-  );
+  const scanFeature = (customer?.features as any)?.scan;
+  const gateFeature = (customer?.features as any)?.gate_scan;
 
   return (
     <div className="max-w-2xl mx-auto px-6 py-12">
