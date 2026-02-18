@@ -13,12 +13,13 @@ export default function BillingPage() {
     );
   }
 
-  const hasSubscription = (customer?.products as any[])?.some(
+  const products = Array.isArray(customer?.products) ? customer.products : [];
+  const hasSubscription = products.some(
     (p: any) => p.status === "active"
   );
 
-  const features = customer?.features as any[] | undefined;
-  const scanFeature = features?.find(
+  const features = Array.isArray(customer?.features) ? customer.features : [];
+  const scanFeature = features.find(
     (f: any) => f.feature_id === "scan"
   );
 

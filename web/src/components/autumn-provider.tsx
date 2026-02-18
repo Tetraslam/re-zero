@@ -7,7 +7,7 @@ export function AutumnWrapper({ children }: { children: React.ReactNode }) {
   const { getToken } = useAuth();
 
   return (
-    <AutumnProvider getBearerToken={() => getToken()}>
+    <AutumnProvider getBearerToken={() => getToken()} includeCredentials>
       {children}
     </AutumnProvider>
   );
