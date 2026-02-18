@@ -24,6 +24,9 @@ export default function BillingPage() {
   const scanFeature = features.find(
     (f: any) => f.feature_id === "scan"
   );
+  const gateFeature = features.find(
+    (f: any) => f.feature_id === "gate_scan"
+  );
 
   return (
     <div className="max-w-2xl mx-auto px-6 py-12">
@@ -37,17 +40,27 @@ export default function BillingPage() {
             <p className="text-sm">
               Active subscription
             </p>
-            {scanFeature && (
-              <div className="text-xs text-muted-foreground mt-2 space-y-1">
-                <p>Pay-as-you-go ($25/scan)</p>
-                {scanFeature.balance > 0 && (
-                  <p>{scanFeature.balance} prepaid scans remaining</p>
-                )}
-                {scanFeature.usage > 0 && (
-                  <p>{scanFeature.usage} used this period</p>
-                )}
-              </div>
-            )}
+            <div className="text-xs text-muted-foreground mt-2 space-y-1">
+              {scanFeature && (
+                <>
+                  <p>Deep scans: $25/scan</p>
+                  {scanFeature.balance > 0 && (
+                    <p>{scanFeature.balance} prepaid scans remaining</p>
+                  )}
+                  {scanFeature.usage > 0 && (
+                    <p>{scanFeature.usage} scans used this period</p>
+                  )}
+                </>
+              )}
+              {gateFeature && (
+                <>
+                  <p>Gate scans: $0.10/scan</p>
+                  {gateFeature.usage > 0 && (
+                    <p>{gateFeature.usage} gate scans this period</p>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         ) : (
           <div className="border border-border p-4">
