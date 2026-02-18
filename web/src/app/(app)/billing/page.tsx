@@ -25,7 +25,8 @@ export default function BillingPage() {
     (p: any) => p.status === "active"
   );
 
-  const scanFeature = (customer?.features as any)?.scan;
+  const maidFeature = (customer?.features as any)?.standard_scan;
+  const oniFeature = (customer?.features as any)?.deep_scan;
   const gateFeature = (customer?.features as any)?.gate_scan;
 
   return (
@@ -39,8 +40,8 @@ export default function BillingPage() {
           <div className="border border-rem/30 bg-rem/5 p-4">
             <p className="text-sm font-medium">Pay-as-you-go</p>
             <div className="text-xs text-muted-foreground mt-3 space-y-1">
-              <p>$25 / standard scan{scanFeature?.usage > 0 ? ` \u00b7 ${scanFeature.usage} used this period` : ""}</p>
-              <p>$45 / deep scan</p>
+              <p>$25 / maid scan{maidFeature?.usage > 0 ? ` \u00b7 ${maidFeature.usage} used this period` : ""}</p>
+              <p>$45 / oni scan{oniFeature?.usage > 0 ? ` \u00b7 ${oniFeature.usage} used this period` : ""}</p>
               <p>$0.10 / gate scan{gateFeature?.usage > 0 ? ` \u00b7 ${gateFeature.usage} used this period` : ""}</p>
             </div>
           </div>
@@ -69,9 +70,9 @@ export default function BillingPage() {
       {hasSubscription && (
         <section className="mb-12">
           <p className="text-xs text-muted-foreground mb-4">SCAN PACKS</p>
-          {scanFeature?.balance > 0 && (
+          {maidFeature?.balance > 0 && (
             <p className="text-sm mb-4">
-              {scanFeature.balance} prepaid {scanFeature.balance === 1 ? "scan" : "scans"} remaining
+              {maidFeature.balance} prepaid {maidFeature.balance === 1 ? "scan" : "scans"} remaining
             </p>
           )}
           <p className="text-xs text-muted-foreground mb-4">

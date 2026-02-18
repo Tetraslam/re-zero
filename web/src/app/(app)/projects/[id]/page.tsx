@@ -8,18 +8,7 @@ import Link from "next/link";
 import { useMemo, useState, useEffect } from "react";
 import { useMinLoading } from "@/hooks/use-min-loading";
 import { useApiKey } from "@/hooks/use-api-key";
-
-const AGENTS = ["opus", "glm", "nemotron"] as const;
-const AGENT_LABELS: Record<string, string> = {
-  opus: "Rem (Opus 4.6)",
-  glm: "Rem (GLM-4.6V)",
-  nemotron: "Rem (Nemotron)",
-};
-const AGENT_SHORT: Record<string, string> = {
-  opus: "Opus 4.6",
-  glm: "GLM-4.6V",
-  nemotron: "Nemotron",
-};
+import { TIER_CONFIG, DEFAULT_TIER, getScanLabel, getScanShort, type Tier } from "@/lib/scan-tiers";
 
 function SeverityBar({ findings }: { findings: Array<{ severity: string }> }) {
   if (findings.length === 0) return null;
@@ -56,6 +45,8 @@ export default function ProjectPage() {
   const apiKey = useApiKey();
 
   const [starting, setStarting] = useState(false);
+  const [selectedTier, setSelectedTier] = useState<Tier>(DEFAULT_TIER);
+  const [showTierPicker, setShowTierPicker] = useState(false);
   const [selectedScanId, setSelectedScanId] = useState<string | null>(null);
   const [showCreds, setShowCreds] = useState(false);
   const [credUsername, setCredUsername] = useState("");
@@ -131,10 +122,12 @@ export default function ProjectPage() {
     return null;
   }, [selectedScanId, scans, reportByScan]);
 
-  const handleStartScan = async (agent: "opus" | "glm" | "nemotron") => {
+  const handleStartScan = async () => {
     if (!project || !apiKey) return;
     setStarting(true);
-    const scanId = await createScan({ projectId, agent });
+    const tier = selectedTier;
+    const model = TIER_CONFIG[tier].defaultModel;
+    const scanId = await createScan({ projectId, tier, model });
     try {
       await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/scans/start`, {
         method: "POST",
@@ -147,7 +140,8 @@ export default function ProjectPage() {
           project_id: projectId,
           target_type: project.targetType,
           target_config: project.targetConfig,
-          agent,
+          tier,
+          model,
         }),
       });
     } catch (err) {
@@ -210,20 +204,36 @@ export default function ProjectPage() {
           )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          {AGENTS.map((agent) => {
-            const isDisabled = starting || (agent === "nemotron" && project.targetType === "web");
-            return (
-              <button
-                key={agent}
-                onClick={() => handleStartScan(agent)}
-                disabled={isDisabled}
-                title={agent === "nemotron" && project.targetType === "web" ? "Nemotron is available for OSS scanning only" : undefined}
-                className="text-xs border border-rem/30 text-rem/70 px-2.5 py-1.5 hover:bg-rem/10 hover:border-rem hover:text-rem transition-all duration-100 disabled:opacity-30 active:translate-y-px"
-              >
-                + {AGENT_SHORT[agent]}
-              </button>
-            );
-          })}
+          <button
+            onClick={() => setShowTierPicker(!showTierPicker)}
+            className="text-xs text-muted-foreground/60 hover:text-rem transition-colors duration-100 px-1"
+          >
+            {TIER_CONFIG[selectedTier].label} · ${TIER_CONFIG[selectedTier].price}
+          </button>
+          {showTierPicker && (
+            <div className="flex items-center gap-1">
+              {(Object.keys(TIER_CONFIG) as Tier[]).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => { setSelectedTier(t); setShowTierPicker(false); }}
+                  className={`text-xs px-2 py-1 border transition-all duration-100 ${
+                    t === selectedTier
+                      ? "border-rem text-rem bg-rem/10"
+                      : "border-border text-muted-foreground hover:border-rem/30"
+                  }`}
+                >
+                  {TIER_CONFIG[t].label} ${TIER_CONFIG[t].price}
+                </button>
+              ))}
+            </div>
+          )}
+          <button
+            onClick={handleStartScan}
+            disabled={starting}
+            className="text-xs border border-rem/30 text-rem/70 px-2.5 py-1.5 hover:bg-rem/10 hover:border-rem hover:text-rem transition-all duration-100 disabled:opacity-30 active:translate-y-px"
+          >
+            + Deploy Rem
+          </button>
         </div>
       </div>
 
@@ -321,7 +331,7 @@ export default function ProjectPage() {
                         <span className="inline-block w-1.5 h-1.5 bg-rem animate-pulse shrink-0" />
                       )}
                       <span className={`text-sm ${isSelected ? "text-rem" : "text-foreground"}`}>
-                        {AGENT_SHORT[scan.agent] || scan.agent}
+                        {getScanShort(scan)}
                       </span>
                     </div>
                     {isFailed && (
@@ -375,7 +385,7 @@ export default function ProjectPage() {
               <div className="text-center">
                 <img src="/rem-running.gif" alt="Rem" className="w-20 h-20 mx-auto mb-3 object-contain" />
                 <p className="text-sm text-rem mb-1">
-                  Rem ({AGENT_SHORT[selectedScan.agent]}) is investigating...
+                  Rem ({getScanShort(selectedScan)}) is investigating...
                 </p>
                 <Link
                   href={`/projects/${projectId}/scan/${selectedScan._id}`}
@@ -414,7 +424,7 @@ export default function ProjectPage() {
                 <div className="flex items-baseline justify-between mb-1">
                   <div className="flex items-baseline gap-4">
                     <h2 className="text-sm font-semibold">
-                      {selectedScan ? AGENT_LABELS[selectedScan.agent] : "Report"}
+                      {selectedScan ? getScanLabel(selectedScan) : "Report"}
                     </h2>
                     <span className="text-xs text-muted-foreground tabular-nums">
                       {new Date(selectedReport.createdAt).toLocaleString()}

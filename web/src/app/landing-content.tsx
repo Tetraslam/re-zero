@@ -476,7 +476,7 @@ export function LandingContent() {
 
         <div className="close-inner relative z-10 flex-1 flex flex-col items-center justify-center gap-8 opacity-0">
           <span className="text-[11px] text-muted-foreground font-mono tracking-widest">
-            OPUS 4.6 &middot; GLM-4.6V &middot; NEMOTRON
+            MAID &middot; ONI
           </span>
 
           <h2 className="text-4xl sm:text-6xl font-semibold tracking-tight text-center">

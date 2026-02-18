@@ -3,6 +3,7 @@
 import { useParams } from "next/navigation";
 import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
+import { getScanLabel } from "@/lib/scan-tiers";
 import { Id } from "../../../../convex/_generated/dataModel";
 import Link from "next/link";
 import {
@@ -318,13 +319,6 @@ function SeverityBar({ findings }: { findings: Array<{ severity: string }> }) {
   );
 }
 
-// --- Agent label map ---
-const AGENT_LABELS: Record<string, string> = {
-  opus: "Opus 4.6",
-  glm: "GLM-4.6V",
-  nemotron: "Nemotron",
-};
-
 // --- Main shared page ---
 export default function SharedScanPage() {
   const { token } = useParams<{ token: string }>();
@@ -413,7 +407,7 @@ export default function SharedScanPage() {
       {/* Scan info bar */}
       <div className="flex items-center gap-5 px-8 py-3 border-b border-border shrink-0">
         <span className="text-sm font-semibold">
-          Rem ({AGENT_LABELS[scan.agent] || scan.agent})
+          {getScanLabel(scan)}
         </span>
         <span className="text-xs flex items-center gap-2">
           {isRunning && <span className="inline-block w-1.5 h-1.5 bg-rem animate-pulse" />}

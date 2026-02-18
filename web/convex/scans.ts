@@ -22,15 +22,14 @@ export const get = query({
 export const create = mutation({
   args: {
     projectId: v.id("projects"),
-    agent: v.union(
-      v.literal("opus"),
-      v.literal("glm"),
-      v.literal("nemotron")
-    ),
+    tier: v.union(v.literal("maid"), v.literal("oni")),
+    model: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     return await ctx.db.insert("scans", {
-      ...args,
+      projectId: args.projectId,
+      tier: args.tier,
+      model: args.model,
       status: "queued",
       startedAt: Date.now(),
     });

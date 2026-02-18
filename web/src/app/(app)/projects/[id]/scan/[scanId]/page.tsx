@@ -3,6 +3,7 @@
 import { useParams } from "next/navigation";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../../../convex/_generated/api";
+import { getScanLabel } from "@/lib/scan-tiers";
 import { Id } from "../../../../../../../convex/_generated/dataModel";
 import Link from "next/link";
 import {
@@ -734,13 +735,6 @@ function TracePanel({
   );
 }
 
-// --- Agent label map ---
-const AGENT_LABELS: Record<string, string> = {
-  opus: "Opus 4.6",
-  glm: "GLM-4.6V",
-  nemotron: "Nemotron",
-};
-
 // --- Main page ---
 export default function ScanPage() {
   const { id, scanId } = useParams<{ id: string; scanId: string }>();
@@ -816,7 +810,7 @@ export default function ScanPage() {
           </Link>
           <span className="text-xs text-muted-foreground/30">/</span>
           <span className="text-sm font-semibold">
-            Rem ({AGENT_LABELS[scan.agent] || scan.agent})
+            {getScanLabel(scan)}
           </span>
         </div>
         <span className="text-xs flex items-center gap-2">

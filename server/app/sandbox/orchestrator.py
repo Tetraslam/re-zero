@@ -9,6 +9,39 @@ import os
 
 MINUTES = 60
 
+# ── Tier configuration (source of truth) ─────────────────────────────
+TIER_CONFIG = {
+    "maid": {
+        "label": "Maid",
+        "autumn_feature": "standard_scan",
+        "default_model": "claude-sonnet-4.6",
+        "models": {
+            "claude-sonnet-4.6": {"label": "Sonnet 4.6", "harness": "claude", "api_id": "claude-sonnet-4-5-20250929"},
+            "glm-5": {"label": "GLM-5", "harness": "opencode", "provider": "openrouter", "model_id": "z-ai/glm-5"},
+        },
+    },
+    "oni": {
+        "label": "Oni",
+        "autumn_feature": "deep_scan",
+        "default_model": "claude-opus-4.6",
+        "models": {
+            "claude-opus-4.6": {"label": "Opus 4.6", "harness": "claude", "api_id": "claude-opus-4-6"},
+            "kimi-k2.5": {"label": "Kimi K2.5", "harness": "opencode", "provider": "openrouter", "model_id": "moonshotai/kimi-k2.5"},
+        },
+    },
+}
+
+
+def validate_tier_model(tier: str, model: str | None) -> tuple[str, str, str]:
+    """Validate tier/model combo. Returns (tier, resolved_model, harness)."""
+    if tier not in TIER_CONFIG:
+        raise ValueError(f"Unknown tier: {tier}")
+    cfg = TIER_CONFIG[tier]
+    resolved = model or cfg["default_model"]
+    if resolved not in cfg["models"]:
+        raise ValueError(f"Model {resolved} not available in tier {tier}")
+    return tier, resolved, cfg["models"][resolved]["harness"]
+
 
 def _get_anthropic_client():
     """Create Anthropic client — uses Bedrock if USE_BEDROCK=true, else direct API."""
@@ -20,15 +53,26 @@ def _get_anthropic_client():
 
 
 def _get_model_id(model_name: str) -> str:
-    """Map model names to Bedrock model IDs when using Bedrock."""
+    """Resolve our model name to the actual API model ID.
+
+    Non-Bedrock: returns the api_id from TIER_CONFIG (e.g. claude-opus-4-6).
+    Bedrock: returns the Bedrock-specific model ARN.
+    """
+    # Look up api_id from TIER_CONFIG
+    api_id = model_name
+    for tier_cfg in TIER_CONFIG.values():
+        if model_name in tier_cfg["models"]:
+            api_id = tier_cfg["models"][model_name].get("api_id", model_name)
+            break
+
     if os.environ.get("USE_BEDROCK") != "true":
-        return model_name
-    mapping = {
+        return api_id
+    bedrock_mapping = {
         "claude-opus-4-6": "global.anthropic.claude-opus-4-6-v1",
-        "claude-sonnet-4-5": "global.anthropic.claude-sonnet-4-5-20250929-v1:0",
-        "claude-haiku-4-5": "global.anthropic.claude-haiku-4-5-20251001-v1:0",
+        "claude-sonnet-4-5-20250929": "global.anthropic.claude-sonnet-4-5-20250929-v1:0",
+        "claude-haiku-4-5-20251001": "global.anthropic.claude-haiku-4-5-20251001-v1:0",
     }
-    return mapping.get(model_name, model_name)
+    return bedrock_mapping.get(api_id, api_id)
 
 
 def _use_bedrock() -> bool:
@@ -66,7 +110,7 @@ web_sandbox_image = (
     .run_commands("playwright install --with-deps chromium")
 )
 
-# OpenCode images — for GLM-4.6V and Nemotron via OpenCode SDK
+# OpenCode images — for OpenRouter models (GLM-5, Kimi K2.5, etc.)
 opencode_sandbox_image = (
     modal.Image.debian_slim(python_version="3.12")
     .apt_install("git", "curl", "jq", "unzip")
@@ -98,9 +142,9 @@ async def run_oss_scan(
     scan_id: str,
     project_id: str,
     repo_url: str,
-    agent: str,
-    convex_url: str,
-    convex_deploy_key: str,
+    model: str = "claude-opus-4.6",
+    convex_url: str = "",
+    convex_deploy_key: str = "",
     storage_id: str = "",
 ):
     """Run an OSS security scan in a Modal sandbox."""
@@ -138,16 +182,10 @@ async def run_oss_scan(
         f"Rem loaded {source_label} — {len(file_list)} files indexed"
     )
 
-    if agent == "opus":
-        await _run_claude_agent(
-            scan_id, project_id, repo_url, work_dir, file_list,
-            convex_url, convex_deploy_key,
-        )
-    else:
-        await _run_opencode_agent(
-            scan_id, project_id, agent, work_dir, file_list,
-            repo_url, convex_url, convex_deploy_key,
-        )
+    await _run_claude_agent(
+        scan_id, project_id, repo_url, work_dir, file_list,
+        convex_url, convex_deploy_key, model=model,
+    )
 
 
 async def _convex_mutation(convex_url: str, deploy_key: str, path: str, args: dict):
@@ -352,7 +390,7 @@ Extract every distinct vulnerability or security issue mentioned in the trace. F
 Be thorough — if the scanning agent mentioned it, include it. Don't combine multiple issues into one finding. The summary should be 2-3 sentences covering the overall security posture."""
 
     response = client.messages.create(
-        model=_get_model_id("claude-opus-4-6"),
+        model=_get_model_id("claude-opus-4.6"),
         max_tokens=8192,
         system=[{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
         tools=[{
@@ -448,8 +486,9 @@ async def _run_claude_agent(
     file_list: list[str],
     convex_url: str,
     deploy_key: str,
+    model: str = "claude-opus-4.6",
 ):
-    """Run security scan using Claude API (Opus 4.6 or equivalent via Bedrock)."""
+    """Run security scan using Claude API with the specified model."""
     import anthropic
     import os
     import subprocess
@@ -558,7 +597,7 @@ Files in repository:
         response = None
         if _use_bedrock():
             response = client.messages.create(
-                model=_get_model_id("claude-opus-4-6"),
+                model=_get_model_id(model),
                 max_tokens=4096,
                 system=system_cached,
                 tools=tools,
@@ -568,7 +607,7 @@ Files in repository:
             for attempt in range(3):
                 try:
                     response = client.beta.messages.create(
-                        model="claude-opus-4-6",
+                        model=model,
                         max_tokens=4096,
                         system=system_cached,
                         tools=[*tools, *mcp_tools] if attempt < 2 else tools,
@@ -765,61 +804,49 @@ Files in repository:
 # OpenCode agent helpers
 # ---------------------------------------------------------------------------
 
-# Agent display names for trace messages
-_OPENCODE_AGENT_NAMES = {
-    "glm": "GLM-4.6V",
-    "nemotron": "Nemotron",
-}
+def _get_opencode_model_label(model: str) -> str:
+    """Get display label for an OpenCode model from TIER_CONFIG."""
+    for tier_cfg in TIER_CONFIG.values():
+        if model in tier_cfg["models"]:
+            return tier_cfg["models"][model]["label"]
+    return model
 
-def _build_opencode_config(agent: str) -> dict:
-    """Build opencode.json config for the given agent."""
-    import os
 
-    if agent == "glm":
-        # OpenRouter is built-in but glm-4.6v isn't in OpenCode's catalog —
-        # must register it explicitly under provider.models
-        return {
-            "provider": {
-                "openrouter": {
-                    "models": {
-                        "z-ai/glm-4.6v": {
-                            "name": "GLM-4.6V",
-                            "limit": {
-                                "context": 131072,
-                                "output": 8192,
-                            },
+def _build_opencode_config(model: str) -> dict:
+    """Build opencode.json config for the given model via OpenRouter.
+
+    Uses :nitro suffix for throughput-based provider sorting.
+    See: https://openrouter.ai/docs/guides/routing/provider-selection#provider-sorting
+    """
+    # Look up model_id from TIER_CONFIG
+    model_id = None
+    for tier_cfg in TIER_CONFIG.values():
+        if model in tier_cfg["models"]:
+            model_id = tier_cfg["models"][model].get("model_id", model)
+            break
+    if not model_id:
+        raise ValueError(f"Unknown OpenCode model: {model}")
+
+    label = _get_opencode_model_label(model)
+    # :nitro suffix = sort by throughput on OpenRouter
+    nitro_id = f"{model_id}:nitro"
+
+    return {
+        "provider": {
+            "openrouter": {
+                "models": {
+                    nitro_id: {
+                        "name": label,
+                        "limit": {
+                            "context": 131072,
+                            "output": 8192,
                         },
                     },
                 },
             },
-            "model": "openrouter/z-ai/glm-4.6v",
-        }
-    elif agent == "nemotron":
-        endpoint = os.environ.get("NEMOTRON_ENDPOINT_URL", "")
-        return {
-            "provider": {
-                "nemotron": {
-                    "npm": "@ai-sdk/openai-compatible",
-                    "name": "Nemotron",
-                    "options": {
-                        "baseURL": f"{endpoint}/v1" if endpoint else "http://localhost:8000/v1",
-                        "apiKey": os.environ.get("NEMOTRON_API_KEY", "dummy"),
-                    },
-                    "models": {
-                        "nemotron-14b-ctf": {
-                            "name": "Nemotron-14B CTF",
-                            "limit": {
-                                "context": 131072,
-                                "output": 8192,
-                            },
-                        },
-                    },
-                },
-            },
-            "model": "nemotron/nemotron-14b-ctf",
-        }
-    else:
-        raise ValueError(f"Unknown OpenCode agent: {agent}")
+        },
+        "model": f"openrouter/{nitro_id}",
+    }
 
 
 # Custom tool: submit_findings
@@ -1221,14 +1248,14 @@ async def _stream_opencode_events(
 async def _run_opencode_agent(
     scan_id: str,
     project_id: str,
-    agent: str,
+    model: str,
     work_dir: str,
     file_list: list[str],
     repo_url: str,
     convex_url: str,
     deploy_key: str,
 ):
-    """Run security scan using OpenCode SDK with GLM-4.6V or Nemotron."""
+    """Run security scan using OpenCode SDK (GLM-5, Kimi K2.5, etc.)."""
     import asyncio
     import json
     import os
@@ -1236,12 +1263,12 @@ async def _run_opencode_agent(
     import httpx
     import traceback
 
-    agent_name = _OPENCODE_AGENT_NAMES.get(agent, agent)
+    model_label = _get_opencode_model_label(model)
     await _push_action(convex_url, deploy_key, scan_id, "observation",
-        f"Rem ({agent_name}) initializing OpenCode environment...")
+        f"Rem ({model_label}) initializing OpenCode environment...")
 
     # 1. Write opencode.json with provider config
-    config = _build_opencode_config(agent)
+    config = _build_opencode_config(model)
     config_path = os.path.join(work_dir, "opencode.json")
     with open(config_path, "w") as f:
         json.dump(config, f, indent=2)
@@ -1265,7 +1292,7 @@ async def _run_opencode_agent(
 
     # 4. Start opencode serve
     await _push_action(convex_url, deploy_key, scan_id, "observation",
-        f"Starting OpenCode server with {agent_name}...")
+        f"Starting OpenCode server with {model_label}...")
 
     proc = subprocess.Popen(
         ["opencode", "serve", "--port", "4096"],
@@ -1278,7 +1305,7 @@ async def _run_opencode_agent(
     try:
         await _wait_for_opencode(port=4096)
         await _push_action(convex_url, deploy_key, scan_id, "observation",
-            f"OpenCode server ready — {agent_name} agent active")
+            f"OpenCode server ready — {model_label} agent active")
 
         async with httpx.AsyncClient(
             base_url="http://localhost:4096",
@@ -1337,7 +1364,7 @@ Files in repository:
             await asyncio.sleep(0.5)
 
             await _push_action(convex_url, deploy_key, scan_id, "reasoning",
-                f"Rem ({agent_name}) starting security analysis...")
+                f"Rem ({model_label}) starting security analysis...")
 
             await client.post(
                 f"/session/{session_id}/prompt_async",
@@ -1498,7 +1525,7 @@ async def _run_playwright_bridge(page, convex_url: str, deploy_key: str, scan_id
 async def _run_web_opencode_agent(
     scan_id: str,
     project_id: str,
-    agent: str,
+    model: str,
     target_url: str,
     test_account: dict | None,
     user_context: str | None,
@@ -1507,16 +1534,16 @@ async def _run_web_opencode_agent(
     convex_url: str,
     deploy_key: str,
 ):
-    """Run web pentesting using OpenCode SDK with GLM-4.6V + Playwright bridge."""
+    """Run web pentesting using OpenCode SDK with Playwright bridge."""
     import asyncio
     import json
     import os
     import subprocess
     import httpx
 
-    agent_name = _OPENCODE_AGENT_NAMES.get(agent, agent)
+    model_label = _get_opencode_model_label(model)
     await _push_action(convex_url, deploy_key, scan_id, "observation",
-        f"Rem ({agent_name}) initializing OpenCode for web scanning...")
+        f"Rem ({model_label}) initializing OpenCode for web scanning...")
 
     # 1. Start Playwright bridge HTTP server on port 4097
     bridge_runner = await _run_playwright_bridge(page, convex_url, deploy_key, scan_id)
@@ -1525,7 +1552,7 @@ async def _run_web_opencode_agent(
 
     try:
         # 2. Write opencode.json with provider config
-        config = _build_opencode_config(agent)
+        config = _build_opencode_config(model)
         with open(os.path.join(work_dir, "opencode.json"), "w") as f:
             json.dump(config, f, indent=2)
 
@@ -1548,7 +1575,7 @@ async def _run_web_opencode_agent(
 
         # 5. Start opencode serve
         await _push_action(convex_url, deploy_key, scan_id, "observation",
-            f"Starting OpenCode server with {agent_name}...")
+            f"Starting OpenCode server with {model_label}...")
 
         proc = subprocess.Popen(
             ["opencode", "serve", "--port", "4096"],
@@ -1561,7 +1588,7 @@ async def _run_web_opencode_agent(
         try:
             await _wait_for_opencode(port=4096)
             await _push_action(convex_url, deploy_key, scan_id, "observation",
-                f"OpenCode server ready — {agent_name} agent active for web scanning")
+                f"OpenCode server ready — {model_label} agent active for web scanning")
 
             async with httpx.AsyncClient(
                 base_url="http://localhost:4096",
@@ -1650,7 +1677,7 @@ Be thorough and aggressive. Only report confirmed or highly probable vulnerabili
                 await asyncio.sleep(0.5)
 
                 await _push_action(convex_url, deploy_key, scan_id, "reasoning",
-                    f"Rem ({agent_name}) starting web penetration test...")
+                    f"Rem ({model_label}) starting web penetration test...")
 
                 await client.post(
                     f"/session/{session_id}/prompt_async",
@@ -1685,7 +1712,7 @@ Be thorough and aggressive. Only report confirmed or highly probable vulnerabili
 
 
 # ---------------------------------------------------------------------------
-# OpenCode Modal functions (separate images for GLM-4.6V / Nemotron)
+# OpenCode Modal functions
 # ---------------------------------------------------------------------------
 
 @app.function(
@@ -1697,12 +1724,12 @@ async def run_oss_scan_opencode(
     scan_id: str,
     project_id: str,
     repo_url: str,
-    agent: str,
+    model: str,
     convex_url: str,
     convex_deploy_key: str,
     storage_id: str = "",
 ):
-    """Run an OSS security scan using OpenCode (GLM-4.6V or Nemotron)."""
+    """Run an OSS security scan using OpenCode (GLM-5, Kimi K2.5, etc.)."""
     import subprocess
     import os
 
@@ -1736,7 +1763,7 @@ async def run_oss_scan_opencode(
     )
 
     await _run_opencode_agent(
-        scan_id, project_id, agent, work_dir, file_list,
+        scan_id, project_id, model, work_dir, file_list,
         repo_url, convex_url, convex_deploy_key,
     )
 
@@ -1752,33 +1779,23 @@ async def run_web_scan_opencode(
     target_url: str,
     test_account: dict | None,
     user_context: str | None,
-    agent: str,
+    model: str,
     convex_url: str,
     convex_deploy_key: str,
 ):
-    """Run a web pentesting scan using OpenCode (GLM-4.6V only)."""
-    if agent == "nemotron":
-        await _push_action(
-            convex_url, convex_deploy_key, scan_id, "observation",
-            "Nemotron does not support web scanning (no image input).",
-        )
-        await _convex_mutation(convex_url, convex_deploy_key, "scans:updateStatus", {
-            "scanId": scan_id,
-            "status": "failed",
-            "error": "Nemotron does not support web scanning.",
-        })
-        return
-
+    """Run a web pentesting scan using OpenCode (GLM-5, Kimi K2.5, etc.)."""
     from playwright.async_api import async_playwright
 
     work_dir = "/root/target"
     import os
     os.makedirs(work_dir, exist_ok=True)
 
+    model_label = _get_opencode_model_label(model)
+
     try:
         await _push_action(
             convex_url, convex_deploy_key, scan_id, "observation",
-            f"Rem ({_OPENCODE_AGENT_NAMES.get(agent, agent)}) launching headless browser targeting {target_url}...",
+            f"Rem ({model_label}) launching headless browser targeting {target_url}...",
         )
 
         async with async_playwright() as p:
@@ -1792,7 +1809,7 @@ async def run_web_scan_opencode(
             )
 
             await _run_web_opencode_agent(
-                scan_id, project_id, agent, target_url,
+                scan_id, project_id, model, target_url,
                 test_account, user_context, page, work_dir,
                 convex_url, convex_deploy_key,
             )
@@ -1830,9 +1847,9 @@ async def run_web_scan(
     target_url: str,
     test_account: dict | None,
     user_context: str | None,
-    agent: str,
-    convex_url: str,
-    convex_deploy_key: str,
+    model: str = "claude-opus-4.6",
+    convex_url: str = "",
+    convex_deploy_key: str = "",
 ):
     """Run a web application pentesting scan with headless Chromium via Playwright."""
     from playwright.async_api import async_playwright
@@ -1853,16 +1870,11 @@ async def run_web_scan(
                 f"Browser active — loaded {page.url}",
             )
 
-            if agent == "opus":
-                await _run_web_claude_agent(
-                    scan_id, project_id, target_url, test_account,
-                    user_context, page, convex_url, convex_deploy_key,
-                )
-            else:
-                await _push_action(
-                    convex_url, convex_deploy_key, scan_id, "observation",
-                    f"Rem ({agent}) not yet deployed for web scanning.",
-                )
+            await _run_web_claude_agent(
+                scan_id, project_id, target_url, test_account,
+                user_context, page, convex_url, convex_deploy_key,
+                model=model,
+            )
 
             await browser.close()
 
@@ -1892,8 +1904,9 @@ async def _run_web_claude_agent(
     page,
     convex_url: str,
     deploy_key: str,
+    model: str = "claude-opus-4.6",
 ):
-    """Run web pentesting using Claude Opus 4.6 (or equivalent via Bedrock) with Playwright browser tools."""
+    """Run web pentesting using the specified Claude model with Playwright browser tools."""
     import anthropic
     import json
 
@@ -2081,7 +2094,7 @@ When you call submit_findings, each vulnerability should be its own entry in the
         response = None
         if _use_bedrock():
             response = client.messages.create(
-                model=_get_model_id("claude-opus-4-6"),
+                model=_get_model_id(model),
                 max_tokens=4096,
                 system=system_cached,
                 tools=tools,
@@ -2091,7 +2104,7 @@ When you call submit_findings, each vulnerability should be its own entry in the
             for attempt in range(3):
                 try:
                     response = client.beta.messages.create(
-                        model="claude-opus-4-6",
+                        model=model,
                         max_tokens=4096,
                         system=system_cached,
                         tools=[*tools, *mcp_tools] if attempt < 2 else tools,

@@ -36,11 +36,9 @@ export default defineSchema({
 
   scans: defineTable({
     projectId: v.id("projects"),
-    agent: v.union(
-      v.literal("opus"),
-      v.literal("glm"),
-      v.literal("nemotron")
-    ),
+    tier: v.optional(v.union(v.literal("maid"), v.literal("oni"))),
+    model: v.optional(v.string()),
+    agent: v.optional(v.string()),
     sandboxId: v.optional(v.string()),
     status: v.union(
       v.literal("queued"),

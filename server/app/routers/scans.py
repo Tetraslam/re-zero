@@ -11,6 +11,7 @@ from ..auth import AuthContext, require_api_key
 from ..config import settings
 from ..convex_client import convex_mutation, convex_query
 from ..lib.autumn import autumn_check, autumn_track
+from ..sandbox.orchestrator import TIER_CONFIG, validate_tier_model
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +23,8 @@ class StartScanRequest(BaseModel):
     project_id: str
     target_type: str
     target_config: dict
-    agent: str
+    tier: str = "maid"
+    model: str | None = None
 
 
 class LaunchScanRequest(BaseModel):
@@ -30,7 +32,8 @@ class LaunchScanRequest(BaseModel):
     storage_id: str | None = None
     repo_name: str | None = None
     target_type: str = "oss"
-    agent: str = "opus"
+    tier: str = "maid"
+    model: str | None = None
 
 
 class AgentActionRequest(BaseModel):
@@ -46,9 +49,16 @@ class SubmitReportRequest(BaseModel):
     summary: str | None = None
 
 
+def _resolve_tier(tier: str, model: str | None) -> tuple[str, str, str]:
+    """Resolve tier/model/harness. Returns (tier, resolved_model, harness)."""
+    return validate_tier_model(tier, model)
+
+
 async def _launch_scan(req: StartScanRequest):
     """Background task that launches the Modal sandbox."""
     try:
+        tier, resolved_model, harness = _resolve_tier(req.tier, req.model)
+
         await convex_mutation("scans:updateStatus", {
             "scanId": req.scan_id,
             "status": "running",
@@ -60,18 +70,20 @@ async def _launch_scan(req: StartScanRequest):
             if not repo_url and not storage_id:
                 raise ValueError("Missing repoUrl or storageId in target config")
 
-            # Route to correct Modal function based on agent
-            if req.agent == "opus":
+            # Route by harness
+            if harness == "claude":
                 fn = modal.Function.from_name("re-zero-sandbox", "run_oss_scan")
-            else:
+            elif harness == "opencode":
                 fn = modal.Function.from_name("re-zero-sandbox", "run_oss_scan_opencode")
+            else:
+                raise ValueError(f"Unknown harness: {harness}")
 
             await fn.remote.aio(
                 scan_id=req.scan_id,
                 project_id=req.project_id,
                 repo_url=repo_url or "",
                 storage_id=storage_id or "",
-                agent=req.agent,
+                model=resolved_model,
                 convex_url=settings.convex_url,
                 convex_deploy_key=settings.convex_deploy_key,
             )
@@ -84,11 +96,13 @@ async def _launch_scan(req: StartScanRequest):
             test_account = req.target_config.get("testAccount")
             user_context = req.target_config.get("context")
 
-            # Route to correct Modal function based on agent
-            if req.agent == "opus":
+            # Route by harness
+            if harness == "claude":
                 fn = modal.Function.from_name("re-zero-sandbox", "run_web_scan")
-            else:
+            elif harness == "opencode":
                 fn = modal.Function.from_name("re-zero-sandbox", "run_web_scan_opencode")
+            else:
+                raise ValueError(f"Unknown harness: {harness}")
 
             await fn.remote.aio(
                 scan_id=req.scan_id,
@@ -96,7 +110,7 @@ async def _launch_scan(req: StartScanRequest):
                 target_url=target_url,
                 test_account=test_account,
                 user_context=user_context,
-                agent=req.agent,
+                model=resolved_model,
                 convex_url=settings.convex_url,
                 convex_deploy_key=settings.convex_deploy_key,
             )
@@ -134,10 +148,14 @@ async def launch_scan(
     auth: AuthContext = Depends(require_api_key),
 ):
     """All-in-one: find/create project, create scan, start Modal."""
-    # Check billing — requires payment method on file
+    # Resolve tier/model
+    tier, resolved_model, harness = _resolve_tier(req.tier, req.model)
+
+    # Check billing — use tier-specific feature
+    autumn_feature = TIER_CONFIG[tier]["autumn_feature"]
     if settings.autumn_secret_key and auth.clerk_id:
         try:
-            check = await autumn_check(settings.autumn_secret_key, auth.clerk_id, "scan")
+            check = await autumn_check(settings.autumn_secret_key, auth.clerk_id, autumn_feature)
             if not check.get("allowed"):
                 raise HTTPException(402, "Payment required. Set up billing at https://rezero.sh/billing")
         except HTTPException:
@@ -166,7 +184,8 @@ async def launch_scan(
     # 2. Create scan
     scan_result = await convex_mutation("scans:create", {
         "projectId": project_id,
-        "agent": req.agent,
+        "tier": tier,
+        "model": resolved_model,
     })
     scan_id = scan_result.get("value", scan_result) if isinstance(scan_result, dict) else scan_result
 
@@ -185,7 +204,8 @@ async def launch_scan(
         project_id=project_id,
         target_type=req.target_type,
         target_config=target_config,
-        agent=req.agent,
+        tier=tier,
+        model=resolved_model,
     )
     background_tasks.add_task(_launch_scan, internal_req)
 
@@ -272,16 +292,22 @@ async def submit_report(req: SubmitReportRequest):
         "status": "completed",
     })
 
-    # Track usage in Autumn for billing
+    # Track usage in Autumn for billing — look up tier from scan record
     if settings.autumn_secret_key:
         try:
+            # Get scan to determine tier
+            scan_result = await convex_query("scans:get", {"scanId": req.scan_id})
+            scan = scan_result.get("value", scan_result) if isinstance(scan_result, dict) else scan_result
+            tier = (scan or {}).get("tier", "maid")
+            autumn_feature = TIER_CONFIG.get(tier, {}).get("autumn_feature", "standard_scan")
+
             project_result = await convex_query("projects:get", {"projectId": req.project_id})
             project = project_result.get("value", project_result) if isinstance(project_result, dict) else project_result
             if project:
                 user_result = await convex_query("users:get", {"userId": project["userId"]})
                 user = user_result.get("value", user_result) if isinstance(user_result, dict) else user_result
                 if user and user.get("clerkId"):
-                    await autumn_track(settings.autumn_secret_key, user["clerkId"], "scan", 1)
+                    await autumn_track(settings.autumn_secret_key, user["clerkId"], autumn_feature, 1)
         except Exception as e:
             logger.warning(f"Autumn track failed: {e}")
 

@@ -1,6 +1,6 @@
 {
   "name": "rem-scan",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Re:Zero security scanner CLI",
   "type": "module",
   "bin": {

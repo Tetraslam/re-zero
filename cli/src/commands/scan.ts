@@ -29,7 +29,9 @@ export function scanCommand(): Command {
     .argument("[path]", "Path to repository or GitHub URL", ".")
     .option("--remote", "Scan the GitHub remote instead of local files")
     .option("--repo <url>", "Repository URL (overrides git remote detection)")
-    .option("--agent <name>", "Agent to use", "opus")
+    .option("--maid", "Maid tier — standard scan ($25, default)")
+    .option("--oni", "Oni tier — deep scan ($45)")
+    .option("--model <name>", "Specific model (e.g. claude-opus-4.6, kimi-k2.5)")
     .option("--json", "Output raw JSON")
     .option("--ci", "CI mode: minimal output, exit code based on severity")
     .option("--dry-run", "List files that would be uploaded without scanning")
@@ -154,10 +156,16 @@ export function scanCommand(): Command {
       const startTime = Date.now();
 
       try {
+        if (opts.maid && opts.oni) {
+          console.error(chalk.red("Cannot use both --maid and --oni"));
+          process.exit(2);
+        }
+        const tier = opts.oni ? "oni" : "maid";
         const body: Record<string, string> = {
           target_type: "oss",
-          agent: opts.agent,
+          tier,
         };
+        if (opts.model) body.model = opts.model;
         if (repoUrl) body.repo_url = repoUrl;
         if (storageId) body.storage_id = storageId;
         body.repo_name = repoName;
