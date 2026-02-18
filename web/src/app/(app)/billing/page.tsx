@@ -39,7 +39,8 @@ export default function BillingPage() {
           <div className="border border-rem/30 bg-rem/5 p-4">
             <p className="text-sm font-medium">Pay-as-you-go</p>
             <div className="text-xs text-muted-foreground mt-3 space-y-1">
-              <p>$25 / deep scan{scanFeature?.usage > 0 ? ` \u00b7 ${scanFeature.usage} used this period` : ""}</p>
+              <p>$25 / standard scan{scanFeature?.usage > 0 ? ` \u00b7 ${scanFeature.usage} used this period` : ""}</p>
+              <p>$45 / deep scan</p>
               <p>$0.10 / gate scan{gateFeature?.usage > 0 ? ` \u00b7 ${gateFeature.usage} used this period` : ""}</p>
             </div>
           </div>

@@ -51,7 +51,7 @@ No subscription. No seat fees. No credits. Pay per scan.
 
 | Scan Depth | Our Cost (w/ caching) | Price | Margin |
 |---|---|---|---|
-| CI Gate (Haiku) | ~$0.04 | included | distribution, not revenue |
+| CI Gate (Haiku) | ~$0.04 | $0.10 | 60% |
 | Standard | ~$9.50 | $25 | 62% |
 | Deep | ~$16 | $45 | 64% |
 | Comprehensive | ~$50-75 | $150 | 50-67% |
@@ -61,7 +61,7 @@ Volume packs via Autumn: buy 10 scans get 15% off, buy 25 get 25% off. Prepaid, 
 **Principles**:
 - Pure usage-based. Developers pay when they scan, not monthly.
 - Security audits are episodic (before launch, after major changes, quarterly). 4-8 scans/year for indie devs = $100-360/year. Less than Cursor.
-- CI gate is free/near-free (Haiku, ~$0.04/scan). It's distribution, not a product. Gets Rem into the daily workflow.
+- CI gate is $0.10/scan (Haiku, ~$0.04 cost). Low enough to run on every PR, high enough to generate revenue at scale.
 - Don't artificially gate features. Indie devs get CI/CD, CLI, everything.
 - The user picks scan depth, not models. Model selection is internal to us.
 - Margins are 50-67%. Normal for agent products (Bessemer: "AI companies see 50-60% gross margins"). Not SaaS margins, and that's fine.
@@ -249,9 +249,9 @@ Users pick depth (`--deep`), not models. Model selection is internal.
 
 ### CI Gate (Haiku)
 
-The CI gate is **distribution, not a product**. It gets Rem into the developer's workflow. Runs Haiku for fast, cheap pattern-matching on diffs. Not a multi-turn agent -- a quick triage pass.
+The CI gate runs Haiku for fast, cheap pattern-matching on diffs. Not a multi-turn agent -- a quick triage pass. Gets Rem into the daily workflow and generates revenue at scale.
 
-Cost: ~$0.04/scan. Included with the platform, not billed separately.
+Cost: ~$0.04/scan. Priced at $0.10/scan.
 
 ```yaml
 name: Rem Security Gate
@@ -393,20 +393,28 @@ The brand says "we're serious." The ads say "you need this." Same product, diffe
 
 ## Build Priorities (ordered)
 
-1. **Real CLI** (`rem scan .`) -- fastest path to developer adoption
-2. **`rem init` + GitHub Action** -- interactive setup, CI gate, .rem.yml
-3. **Autumn billing** (usage-based per-scan) -- revenue from scan 2 onward
-4. **Prompt caching implementation** -- 45% cost reduction, critical for margins
-5. **Dependency/CVE scanning tool** -- easy wins on every scan
-6. **Incremental scanning** -- diff-based, critical for CI cost
-7. **Security badge** -- drives recurring deep scans via social pressure
-8. **Drift detection** -- nudges users toward deep scans when codebase changes
-9. **Codex SDK harness** -- multi-provider story
-10. **Exploit generation** -- findings with PoC = 10x value
-11. **SARIF output** -- GitHub Security tab integration
-12. **Scan memory** -- cross-run knowledge, org-configurable
-13. **Profile hub** -- community scan configurations
-14. **Code graph (tree-sitter)** -- multi-file data flow tracing
+### Done
+1. ~~**Real CLI** (`rem scan .`)~~ -- shipped
+2. ~~**`rem init` + GitHub Action**~~ -- shipped
+3. ~~**Autumn billing**~~ -- shipped
+4. ~~**Prompt caching**~~ -- shipped
+5. ~~**CI gate scan**~~ -- shipped (Haiku, synchronous, action.yml)
+
+### Next Up
+6. **Standard + Deep scan system** -- Sonnet for standard ($25), Opus for deep ($45). Dashboard shows "Standard Scan" / "Deep Scan" buttons instead of raw model picker. CLI: `rem scan .` (standard) / `rem scan --deep` (deep). Model selection is internal.
+7. **CVE scanning** -- Run `npm audit`, `pip audit`, `cargo audit`, `govulncheck` inside Modal sandbox. Agent validates which CVEs are actually reachable.
+8. **Dependency audit** -- Structured dependency analysis as agent tool. Feed results to orchestrator for triage.
+9. **Code graph (tree-sitter)** -- AST-level agent tool. Trace data flows: "all paths from HTTP input to SQL queries." Multi-file reasoning.
+10. **Scan memory** -- Cross-run knowledge. v1.2.0 → v1.3.0 = focus on what changed. Org-level configurable.
+11. **Improve gate scan** -- Reduce false positives further, smart skip rules (docs-only changes, trivial diffs, debounce), incremental improvements to Haiku prompt.
+12. **Agent harness architecture + planning** -- Rethink harness design. (Notes from Shresht — ask when we get here.)
+13. **Codex SDK harness** -- OpenAI GPT-5.2 as second provider. ~20 min integration.
+14. **OpenCode SDK improvement + testing** -- Improve GLM/OpenRouter harness, test reliability, SSE relay.
+15. **Exploit generation** -- Agent produces working PoC (curl, Python script) for each finding. 10x more convincing.
+16. **AgentMail integration** -- Test account creation via agentmail. Agent reads email for 2FA/verification codes during web scans.
+17. **SARIF output** -- `rem scan . --format sarif`. GitHub Security tab integration.
+18. **Profile hub** -- Community scan configurations. Prompt additions, skills, scope rules.
+19. **Security badge** -- `rezero.sh/badge/org/repo` endpoint. SVG badge for READMEs. Drives recurring scans.
 
 ---
 
@@ -414,12 +422,12 @@ The brand says "we're serious." The ads say "you need this." Same product, diffe
 
 Users pick depth, not models. Model selection is internal.
 
-- **CI Gate** (seconds, Haiku): Pattern matching on diffs. Not a multi-turn agent. Catches obvious issues, drives deep scan conversions. ~$0.04/scan, included with platform.
+- **CI Gate** (seconds, Haiku): Pattern matching on diffs. Not a multi-turn agent. Catches obvious issues, drives deep scan conversions. $0.10/scan.
 - **Standard** (`rem scan`, ~15-30 min): Full repo or web app analysis, dependency audit. The default on-demand scan. $25/scan.
 - **Deep** (`rem scan --deep`, ~30-60 min): Multi-pass analysis, more turns, broader exploration. For pre-launch, post-incident, quarterly audits. $45/scan.
 - **Comprehensive** (future, ~1-2 hours): Everything above + code execution, fuzzing, exploit generation, multi-pass subagents, sandbox networking. $150/scan.
 
-Depth tiers are about **thoroughness** (turns, tools, passes), not model quality. Sonnet 4.6 is the default model for all tiers given near-Opus performance at 60% cost. Opus reserved for comprehensive only.
+Depth tiers are about **thoroughness** (turns, tools, passes), not model quality. Standard uses Sonnet 4.6, Deep uses Opus. Users never see model names — they pick "Standard" or "Deep."
 
 **Note**: Don't prematurely define tiers -- build tools, let the tiers emerge from capability.
 
@@ -527,7 +535,7 @@ $ rem init
 
   When should Rem check your code?
     > On merge to main (Recommended)
-      On every PR [~$0.04/PR with gate scan]
+      On every PR [$0.10/PR with gate scan]
       Manual only (rem scan)
 
   What happens when vulnerabilities are found?
@@ -561,8 +569,8 @@ $ rem init
 **When user selects "On every PR":**
 ```
   On every PR
-  [Runs a gate scan (~$0.04) on each PR.
-   ~30 PRs/month = ~$1.20/month]
+  [Runs a gate scan ($0.10) on each PR.
+   ~30 PRs/month = ~$3.00/month]
 ```
 
 ### .rem.yml Config
