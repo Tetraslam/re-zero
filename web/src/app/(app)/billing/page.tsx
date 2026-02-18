@@ -5,7 +5,12 @@ import { useCustomer, CheckoutDialog } from "autumn-js/react";
 const BILLING_URL = typeof window !== "undefined" ? `${window.location.origin}/billing` : "/billing";
 
 export default function BillingPage() {
-  const { customer, checkout, openBillingPortal, isLoading } = useCustomer();
+  const { customer, checkout, openBillingPortal, isLoading } = useCustomer({
+    expand: ["features"],
+  });
+
+  // Debug: remove once billing is confirmed working
+  if (customer) console.log("[billing] customer:", JSON.stringify(customer, null, 2));
 
   if (isLoading) {
     return (
