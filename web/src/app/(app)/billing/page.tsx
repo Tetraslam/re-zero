@@ -3,7 +3,7 @@
 import { useCustomer, CheckoutDialog } from "autumn-js/react";
 
 export default function BillingPage() {
-  const { customer, checkout, isLoading } = useCustomer();
+  const { customer, checkout, openBillingPortal, isLoading } = useCustomer();
 
   if (isLoading) {
     return (
@@ -115,12 +115,7 @@ export default function BillingPage() {
           Manage payment methods, invoices, and subscription via Stripe.
         </p>
         <button
-          onClick={() => {
-            // billingPortal opens Stripe's portal
-            if ((window as any).__autumn_billing_portal) {
-              (window as any).__autumn_billing_portal();
-            }
-          }}
+          onClick={() => openBillingPortal()}
           className="text-sm text-rem hover:underline mt-2"
         >
           open billing portal

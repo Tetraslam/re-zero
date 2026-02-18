@@ -14,7 +14,6 @@
     "@clerk/themes": "^2.4.52",
     "@hookform/resolvers": "^5.2.2",
     "@paper-design/shaders-react": "^0.0.71",
-    "@useautumn/convex": "^0.0.23",
     "animejs": "^4.3.6",
     "autumn-js": "^0.1.75",
     "class-variance-authority": "^0.7.1",

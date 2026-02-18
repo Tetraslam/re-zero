@@ -1,14 +1,13 @@
 "use client";
 
 import { AutumnProvider } from "autumn-js/react";
-import { api } from "../../convex/_generated/api";
-import { useConvex } from "convex/react";
+import { useAuth } from "@clerk/nextjs";
 
 export function AutumnWrapper({ children }: { children: React.ReactNode }) {
-  const convex = useConvex();
+  const { getToken } = useAuth();
 
   return (
-    <AutumnProvider convex={convex} convexApi={(api as any).autumn}>
+    <AutumnProvider getBearerToken={() => getToken()}>
       {children}
     </AutumnProvider>
   );
