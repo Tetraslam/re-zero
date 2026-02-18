@@ -1,6 +1,7 @@
 "use client";
 
 import { useCustomer, CheckoutDialog } from "autumn-js/react";
+import { RemLoader } from "@/components/rem-spinner";
 
 const BILLING_URL = typeof window !== "undefined" ? `${window.location.origin}/billing` : "/billing";
 
@@ -10,7 +11,7 @@ export default function BillingPage() {
   if (isLoading) {
     return (
       <div className="max-w-2xl mx-auto px-6 py-12">
-        <p className="text-sm text-muted-foreground">Loading...</p>
+        <RemLoader />
       </div>
     );
   }

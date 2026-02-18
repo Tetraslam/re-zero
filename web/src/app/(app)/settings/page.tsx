@@ -4,6 +4,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useState } from "react";
+import { RemLoader } from "@/components/rem-spinner";
 
 export default function SettingsPage() {
   const { user, isLoaded } = useCurrentUser();
@@ -23,7 +24,7 @@ export default function SettingsPage() {
   if (!isLoaded) {
     return (
       <div className="max-w-2xl mx-auto px-6 py-12">
-        <p className="text-sm text-muted-foreground">Loading...</p>
+        <RemLoader />
       </div>
     );
   }
