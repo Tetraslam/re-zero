@@ -107,6 +107,7 @@ web_sandbox_image = (
         "pydantic",
         "playwright",
         "stagehand",
+        "aiohttp",
     )
     .run_commands(
         "playwright install --with-deps chromium",
@@ -1509,6 +1510,101 @@ Files in repository:
 
 
 # ---------------------------------------------------------------------------
+# Bedrock-to-Anthropic API proxy (for Stagehand's SEA binary)
+# ---------------------------------------------------------------------------
+#
+# The Stagehand SEA binary uses @ai-sdk/anthropic for LLM calls (element
+# resolution during act/observe/extract). It does NOT support Bedrock as a
+# provider. We run a local HTTP proxy that accepts Anthropic-format API
+# requests and forwards them to Bedrock using the anthropic[bedrock] SDK.
+# The SEA binary picks up the proxy via ANTHROPIC_BASE_URL env var.
+
+_BEDROCK_MODEL_MAP = {
+    "claude-haiku-4-5-20251001": "global.anthropic.claude-haiku-4-5-20251001-v1:0",
+    "claude-sonnet-4-5-20250929": "global.anthropic.claude-sonnet-4-5-20250929-v1:0",
+    "claude-opus-4-6": "global.anthropic.claude-opus-4-6-v1",
+}
+
+
+async def _start_bedrock_proxy():
+    """Start a local HTTP proxy that translates Anthropic API requests to Bedrock.
+
+    Returns (port, runner) — set ANTHROPIC_BASE_URL=http://127.0.0.1:{port}/v1
+    before starting Stagehand so the SEA binary routes through us.
+    """
+    from aiohttp import web
+    import anthropic
+    import json
+
+    bedrock = anthropic.AsyncAnthropicBedrock(
+        aws_region=os.environ.get("AWS_REGION", "us-west-2"),
+    )
+
+    async def handle_messages(request):
+        body = await request.json()
+
+        # Map model name to Bedrock model ID
+        model = body.get("model", "")
+        body["model"] = _BEDROCK_MODEL_MAP.get(model, model)
+
+        stream_mode = body.pop("stream", False)
+
+        try:
+            if stream_mode:
+                resp = web.StreamResponse(headers={
+                    "Content-Type": "text/event-stream",
+                    "Cache-Control": "no-cache",
+                    "Connection": "keep-alive",
+                })
+                await resp.prepare(request)
+
+                async with bedrock.messages.stream(
+                    model=body["model"],
+                    max_tokens=body.get("max_tokens", 1024),
+                    messages=body.get("messages", []),
+                    system=body.get("system", anthropic.NOT_GIVEN),
+                    temperature=body.get("temperature", anthropic.NOT_GIVEN),
+                    tools=body.get("tools", anthropic.NOT_GIVEN),
+                    tool_choice=body.get("tool_choice", anthropic.NOT_GIVEN),
+                ) as stream:
+                    async for event in stream:
+                        raw = event.model_dump() if hasattr(event, "model_dump") else {"type": "unknown"}
+                        event_type = raw.get("type", "unknown")
+                        sse_line = f"event: {event_type}\ndata: {json.dumps(raw)}\n\n"
+                        await resp.write(sse_line.encode())
+
+                return resp
+            else:
+                result = await bedrock.messages.create(
+                    model=body["model"],
+                    max_tokens=body.get("max_tokens", 1024),
+                    messages=body.get("messages", []),
+                    system=body.get("system", anthropic.NOT_GIVEN),
+                    temperature=body.get("temperature", anthropic.NOT_GIVEN),
+                    tools=body.get("tools", anthropic.NOT_GIVEN),
+                    tool_choice=body.get("tool_choice", anthropic.NOT_GIVEN),
+                )
+                return web.json_response(result.model_dump())
+        except Exception as e:
+            return web.json_response(
+                {"error": {"type": "api_error", "message": str(e)}},
+                status=500,
+            )
+
+    proxy_app = web.Application()
+    proxy_app.router.add_post("/v1/messages", handle_messages)
+    proxy_app.router.add_post("/messages", handle_messages)
+
+    runner = web.AppRunner(proxy_app)
+    await runner.setup()
+    site = web.TCPSite(runner, "127.0.0.1", 0)
+    await site.start()
+    port = site._server.sockets[0].getsockname()[1]
+
+    return port, runner
+
+
+# ---------------------------------------------------------------------------
 # Stagehand browser session (shared by both Claude and OpenCode web paths)
 # ---------------------------------------------------------------------------
 
@@ -1523,20 +1619,21 @@ async def _start_stagehand_browser(target_url: str):
     from stagehand import AsyncStagehand
     from playwright.async_api import async_playwright
 
-    # CHROME_PATH is baked into the Modal image env via symlink at /usr/local/bin/stagehand-chrome.
-    # The symlink is created at image build time pointing to Playwright's actual Chromium binary.
     chrome_path = os.environ.get("CHROME_PATH", "/usr/local/bin/stagehand-chrome")
 
-    # Stagehand local mode: SEA binary (embedded Node.js server) starts Chrome + handles
-    # AI element resolution via Haiku on Bedrock. AWS creds flow through env vars.
+    # Start Bedrock proxy — the SEA binary doesn't support Bedrock natively,
+    # so we proxy Anthropic API requests through to Bedrock using AWS creds.
+    proxy_port, proxy_runner = await _start_bedrock_proxy()
+    os.environ["ANTHROPIC_BASE_URL"] = f"http://127.0.0.1:{proxy_port}/v1"
+
     client = AsyncStagehand(
         server="local",
-        model_api_key="bedrock",  # placeholder — bedrock uses AWS credential chain, not API key
+        model_api_key="dummy-key-proxy-handles-auth",
         local_chrome_path=chrome_path,
         local_ready_timeout_s=60.0,
     )
     session = await client.sessions.start(
-        model_name="bedrock/global.anthropic.claude-haiku-4-5-20251001-v1:0",
+        model_name="anthropic/claude-haiku-4-5-20251001",
         browser={
             "type": "local",
             "launchOptions": {
@@ -1553,7 +1650,7 @@ async def _start_stagehand_browser(target_url: str):
     # Connect raw Playwright to the SAME browser via CDP for execute_js/screenshot
     pw_manager = async_playwright()
     pw = await pw_manager.__aenter__()
-    browser = await pw.chromium.connect_over_cdp(session.connect_url)
+    browser = await pw.chromium.connect_over_cdp(session.data.cdp_url)
     context = browser.contexts[0]
     pw_page = context.pages[0] if context.pages else await context.new_page()
 
@@ -1562,6 +1659,7 @@ async def _start_stagehand_browser(target_url: str):
             lambda: session.end(),
             lambda: client.close(),
             lambda: pw_manager.__aexit__(None, None, None),
+            lambda: proxy_runner.cleanup(),
         ]:
             try:
                 await fn()
