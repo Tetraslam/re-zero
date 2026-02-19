@@ -106,6 +106,7 @@ web_sandbox_image = (
         "anthropic[bedrock]",
         "pydantic",
         "playwright",
+        "stagehand",
     )
     .run_commands("playwright install --with-deps chromium")
 )
@@ -126,7 +127,7 @@ opencode_sandbox_image = (
 
 opencode_web_sandbox_image = (
     opencode_sandbox_image
-    .pip_install("playwright", "aiohttp")
+    .pip_install("playwright", "aiohttp", "stagehand")
     .run_commands("playwright install --with-deps chromium")
 )
 
@@ -997,20 +998,25 @@ _WEB_TOOLS = {
         "Navigate the browser to a URL. Returns the page title and first 2000 chars of visible text.",
         'url: tool.schema.string().describe("URL to navigate to")',
     ),
+    "act": _make_bridge_tool(
+        "act",
+        "Perform a browser action using natural language. Stagehand AI finds the right element and interacts with it. Examples: 'click the login button', 'fill the search box with test query'. For sensitive values use variables: instruction='fill password with %pass%', variables={pass: 'secret'}.",
+        'instruction: tool.schema.string().describe("Natural language instruction for the action"), variables: tool.schema.record(tool.schema.string(), tool.schema.string()).optional().describe("Sensitive values as %name% placeholders — not sent to AI")',
+    ),
+    "observe": _make_bridge_tool(
+        "observe",
+        "Find interactive elements on the page using natural language. Returns actionable elements with descriptions.",
+        'instruction: tool.schema.string().describe("What to look for, e.g. find all form inputs, find the login button")',
+    ),
+    "extract": _make_bridge_tool(
+        "extract",
+        "Extract structured data from the page using AI. Provide instruction and optionally a JSON schema.",
+        'instruction: tool.schema.string().describe("What data to extract"), schema: tool.schema.record(tool.schema.string(), tool.schema.any()).optional().describe("JSON schema for output")',
+    ),
     "get_page_content": _make_bridge_tool(
         "get_page_content",
-        "Get the current page's HTML, links, forms, and interactive elements. Use this to understand page structure before interacting.",
+        "Get the current page's HTML, links, forms, and interactive elements. Use this for detailed structural security analysis.",
         "",
-    ),
-    "click": _make_bridge_tool(
-        "click",
-        "Click an element by CSS selector or text. Use get_page_content first to find selectors.",
-        'selector: tool.schema.string().describe("CSS selector or text: prefix for text content")',
-    ),
-    "fill_field": _make_bridge_tool(
-        "fill_field",
-        "Fill a form field with a value. Triggers proper input events.",
-        'selector: tool.schema.string().describe("CSS selector for the input"), value: tool.schema.string().describe("Value to fill in")',
     ),
     "execute_js": _make_bridge_tool(
         "execute_js",
@@ -1487,14 +1493,71 @@ Files in repository:
 
 
 # ---------------------------------------------------------------------------
-# Playwright bridge HTTP server (for OpenCode web scanning)
+# Stagehand browser session (shared by both Claude and OpenCode web paths)
 # ---------------------------------------------------------------------------
 
-async def _run_playwright_bridge(page, convex_url: str, deploy_key: str, scan_id: str, port: int = 4097):
-    """Start an HTTP server exposing Playwright operations for OpenCode tools.
+async def _start_stagehand_browser(target_url: str):
+    """Start Stagehand local mode with Haiku for AI-powered browser automation.
 
-    Custom TypeScript tools call fetch("http://localhost:4097/<action>") to
-    interact with the browser. Returns the aiohttp server runner for cleanup.
+    Returns (session, pw_page, cleanup) where:
+    - session: Stagehand session — use for act/observe/extract/navigate
+    - pw_page: raw Playwright page via CDP — use for execute_js/screenshot
+    - cleanup: async callable to tear everything down
+    """
+    from stagehand import AsyncStagehand
+    from playwright.async_api import async_playwright
+    import glob
+
+    # Find Playwright's Chromium binary for Stagehand local mode
+    chrome_paths = glob.glob("/root/.cache/ms-playwright/chromium-*/chrome-linux/chrome")
+    if chrome_paths:
+        os.environ["CHROME_PATH"] = chrome_paths[0]
+
+    # Create Stagehand client in local mode — Haiku via Bedrock handles element resolution
+    # AWS creds (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION)
+    # already in env from Modal secret — SEA binary picks them up via AWS credential chain
+    client = AsyncStagehand(
+        server="local",
+        model_api_key="bedrock",  # placeholder — bedrock uses AWS credential chain, not API key
+    )
+    session = await client.sessions.start(
+        model_name="bedrock/global.anthropic.claude-haiku-4-5-20251001-v1:0",
+    )
+
+    # Navigate to target via Stagehand
+    await session.navigate(url=target_url)
+
+    # Connect raw Playwright to the SAME browser via CDP for execute_js/screenshot
+    pw_manager = async_playwright()
+    pw = await pw_manager.__aenter__()
+    browser = await pw.chromium.connect_over_cdp(session.connect_url)
+    context = browser.contexts[0]
+    pw_page = context.pages[0] if context.pages else await context.new_page()
+
+    async def cleanup():
+        for fn in [
+            lambda: session.end(),
+            lambda: client.close(),
+            lambda: pw_manager.__aexit__(None, None, None),
+        ]:
+            try:
+                await fn()
+            except Exception:
+                pass
+
+    return session, pw_page, cleanup
+
+
+# ---------------------------------------------------------------------------
+# Stagehand bridge HTTP server (for OpenCode web scanning)
+# ---------------------------------------------------------------------------
+
+async def _run_stagehand_bridge(session, pw_page, convex_url: str, deploy_key: str, scan_id: str, port: int = 4097):
+    """Start an HTTP server exposing Stagehand + Playwright operations for OpenCode tools.
+
+    AI-powered tools (act, observe, extract, navigate) go through Stagehand session.
+    Raw tools (execute_js, screenshot, get_page_content) go through Playwright page via CDP.
+    Returns the aiohttp server runner for cleanup.
     """
     from aiohttp import web
     import json
@@ -1503,17 +1566,65 @@ async def _run_playwright_bridge(page, convex_url: str, deploy_key: str, scan_id
         data = await request.json()
         url = data.get("url", "")
         try:
-            resp = await page.goto(url, timeout=15000)
-            status = resp.status if resp else "?"
-            title = await page.title()
-            text = await page.inner_text("body")
-            return web.Response(text=f"Navigated to {page.url} (HTTP {status})\nTitle: {title}\n\n{text[:2000]}")
+            await session.navigate(url=url)
+            title = await pw_page.title()
+            text = await pw_page.inner_text("body")
+            return web.Response(text=f"Navigated to {pw_page.url}\nTitle: {title}\n\n{text[:2000]}")
         except Exception as e:
             return web.Response(text=f"Navigation failed: {e}", status=500)
 
+    async def handle_act(request):
+        data = await request.json()
+        instruction = data.get("instruction", "")
+        variables = data.get("variables")
+        try:
+            kwargs = {"input": instruction}
+            if variables:
+                kwargs["variables"] = variables
+            result = await session.act(**kwargs)
+            msg = result.data.result.message if result.data and result.data.result else "Action completed"
+            success = result.data.result.success if result.data and result.data.result else True
+            return web.Response(text=f"{'Success' if success else 'Failed'}: {msg}. Now at {pw_page.url}")
+        except Exception as e:
+            return web.Response(text=f"Act failed: {e}", status=500)
+
+    async def handle_observe(request):
+        data = await request.json()
+        instruction = data.get("instruction", "")
+        try:
+            result = await session.observe(instruction=instruction)
+            elements = result.data.result if result.data else []
+            items = []
+            for el in (elements or []):
+                d = el.to_dict(exclude_none=True) if hasattr(el, "to_dict") else str(el)
+                items.append(d)
+            return web.Response(
+                text=json.dumps(items[:20], indent=2, default=str),
+                content_type="application/json",
+            )
+        except Exception as e:
+            return web.Response(text=f"Observe failed: {e}", status=500)
+
+    async def handle_extract(request):
+        data = await request.json()
+        instruction = data.get("instruction", "")
+        schema = data.get("schema")
+        try:
+            kwargs = {"instruction": instruction}
+            if schema:
+                kwargs["schema"] = schema
+            result = await session.extract(**kwargs)
+            extracted = result.data.result if result.data else {}
+            return web.Response(
+                text=json.dumps(extracted, indent=2, default=str),
+                content_type="application/json",
+            )
+        except Exception as e:
+            return web.Response(text=f"Extract failed: {e}", status=500)
+
     async def handle_get_page_content(request):
         try:
-            content = await page.evaluate("""() => {
+            content = await pw_page.evaluate("""() => {
                 const result = {
                     url: location.href,
                     title: document.title,
@@ -1541,41 +1652,18 @@ async def _run_playwright_bridge(page, convex_url: str, deploy_key: str, scan_id
                 });
                 return result;
             }""")
-            html = await page.content()
+            html = await pw_page.content()
             content["html_preview"] = html[:8000]
             return web.Response(text=json.dumps(content, indent=2, default=str),
                                 content_type="application/json")
         except Exception as e:
             return web.Response(text=f"Failed to read page: {e}", status=500)
 
-    async def handle_click(request):
-        data = await request.json()
-        selector = data.get("selector", "")
-        try:
-            if selector.startswith("text:"):
-                await page.get_by_text(selector[5:]).first.click(timeout=5000)
-            else:
-                await page.click(selector, timeout=5000)
-            await page.wait_for_load_state("domcontentloaded", timeout=5000)
-            return web.Response(text=f"Clicked {selector}. Now at {page.url}")
-        except Exception as e:
-            return web.Response(text=f"Click failed: {e}", status=500)
-
-    async def handle_fill_field(request):
-        data = await request.json()
-        selector = data.get("selector", "")
-        value = data.get("value", "")
-        try:
-            await page.fill(selector, value, timeout=5000)
-            return web.Response(text=f"Filled {selector} with value")
-        except Exception as e:
-            return web.Response(text=f"Fill failed: {e}", status=500)
-
     async def handle_execute_js(request):
         data = await request.json()
         script = data.get("script", "")
         try:
-            result = await page.evaluate(script)
+            result = await pw_page.evaluate(script)
             return web.Response(text=json.dumps(result, indent=2, default=str) if result is not None else "undefined")
         except Exception as e:
             return web.Response(text=f"JS execution failed: {e}", status=500)
@@ -1584,7 +1672,7 @@ async def _run_playwright_bridge(page, convex_url: str, deploy_key: str, scan_id
         data = await request.json()
         label = data.get("label", "screenshot")
         try:
-            screenshot_bytes = await page.screenshot(type="png")
+            screenshot_bytes = await pw_page.screenshot(type="png")
             storage_id = await _upload_screenshot(convex_url, deploy_key, screenshot_bytes)
             await _push_action(convex_url, deploy_key, scan_id, "tool_result", {
                 "tool": "screenshot",
@@ -1597,9 +1685,10 @@ async def _run_playwright_bridge(page, convex_url: str, deploy_key: str, scan_id
 
     app = web.Application()
     app.router.add_post("/navigate", handle_navigate)
+    app.router.add_post("/act", handle_act)
+    app.router.add_post("/observe", handle_observe)
+    app.router.add_post("/extract", handle_extract)
     app.router.add_post("/get_page_content", handle_get_page_content)
-    app.router.add_post("/click", handle_click)
-    app.router.add_post("/fill_field", handle_fill_field)
     app.router.add_post("/execute_js", handle_execute_js)
     app.router.add_post("/screenshot", handle_screenshot)
 
@@ -1617,12 +1706,13 @@ async def _run_web_opencode_agent(
     target_url: str,
     test_account: dict | None,
     user_context: str | None,
-    page,
+    stagehand_session,
+    pw_page,
     work_dir: str,
     convex_url: str,
     deploy_key: str,
 ):
-    """Run web pentesting using OpenCode SDK with Playwright bridge."""
+    """Run web pentesting using OpenCode SDK with Stagehand bridge."""
     import asyncio
     import json
     import os
@@ -1633,10 +1723,10 @@ async def _run_web_opencode_agent(
     await _push_action(convex_url, deploy_key, scan_id, "observation",
         f"Rem ({model_label}) initializing OpenCode for web scanning...")
 
-    # 1. Start Playwright bridge HTTP server on port 4097
-    bridge_runner = await _run_playwright_bridge(page, convex_url, deploy_key, scan_id)
+    # 1. Start Stagehand bridge HTTP server on port 4097
+    bridge_runner = await _run_stagehand_bridge(stagehand_session, pw_page, convex_url, deploy_key, scan_id)
     await _push_action(convex_url, deploy_key, scan_id, "observation",
-        "Playwright bridge server active on port 4097")
+        "Stagehand bridge server active on port 4097")
 
     try:
         # 2. Write opencode.json with provider config
@@ -1730,15 +1820,22 @@ Target: {target_url}
 Human-in-the-loop:
 You have an ask_human tool. The operator is watching the scan live and can help you. When you hit something you can't get past alone — 2FA codes, email verification, CAPTCHAs, bot detection — use ask_human.
 
-You have browser tools: navigate, get_page_content, click, fill_field, execute_js, screenshot.
+Browser tools (powered by Stagehand AI — use natural language, NOT CSS selectors):
+- navigate(url): go to a URL
+- act(instruction): perform browser actions in natural language — "click the login button", "fill the email field with test@example.com". For passwords/secrets, use variables: instruction="fill password with %pass%", variables={{pass: "secret"}}
+- observe(instruction): find interactive elements — "find all form inputs", "find the submit button"
+- extract(instruction, schema): extract structured data from the page
+- get_page_content(): detailed HTML/form/link/meta analysis for security review
+- execute_js(script): run JavaScript (cookies, headers, XSS tests, DOM)
+- screenshot(label): capture visual evidence
 
 Methodology:
-1. Use get_page_content to understand the page structure — forms, links, inputs
+1. Use observe and get_page_content to understand the page — forms, inputs, links
 2. Check security headers and cookies via execute_js
-3. Crawl key pages — forms, login, search, API endpoints, admin paths
+3. Crawl key pages — use navigate + observe to explore forms, login, search, API endpoints, admin paths
 4. Actively test for vulnerabilities:
-   - XSS: inject payloads via fill_field and navigate to URL params
-   - SQL injection: test inputs with ' OR 1=1 --, UNION SELECT, etc.
+   - XSS: inject payloads via act("fill the search field with <script>alert(1)</script>") and navigate to URL params
+   - SQL injection: test inputs with act("fill the field with ' OR 1=1 --")
    - Auth bypass: navigate to /admin, /api/users, modify IDs in URLs
    - CSRF: check if forms have anti-CSRF tokens (get_page_content)
    - Security headers: CSP, HSTS, X-Frame-Options, X-Content-Type-Options
@@ -1877,9 +1974,7 @@ async def run_web_scan_opencode(
     convex_url: str,
     convex_deploy_key: str,
 ):
-    """Run a web pentesting scan using OpenCode (GLM-5, Kimi K2.5, etc.)."""
-    from playwright.async_api import async_playwright
-
+    """Run a web pentesting scan using OpenCode (GLM-5, Kimi K2.5, etc.) with Stagehand."""
     work_dir = "/root/target"
     import os
     os.makedirs(work_dir, exist_ok=True)
@@ -1889,26 +1984,24 @@ async def run_web_scan_opencode(
     try:
         await _push_action(
             convex_url, convex_deploy_key, scan_id, "observation",
-            f"Rem ({model_label}) launching headless browser targeting {target_url}...",
+            f"Rem ({model_label}) launching Stagehand browser targeting {target_url}...",
         )
 
-        async with async_playwright() as p:
-            browser = await p.chromium.launch(headless=True)
-            page = await browser.new_page()
-            await page.goto(target_url, timeout=20000)
+        session, pw_page, cleanup = await _start_stagehand_browser(target_url)
 
+        try:
             await _push_action(
                 convex_url, convex_deploy_key, scan_id, "observation",
-                f"Browser active — loaded {page.url}",
+                f"Browser active (Stagehand + Haiku) — loaded {pw_page.url}",
             )
 
             await _run_web_opencode_agent(
                 scan_id, project_id, model, target_url,
-                test_account, user_context, page, work_dir,
+                test_account, user_context, session, pw_page, work_dir,
                 convex_url, convex_deploy_key,
             )
-
-            await browser.close()
+        finally:
+            await cleanup()
 
     except Exception as e:
         try:
@@ -1927,7 +2020,7 @@ async def run_web_scan_opencode(
 
 
 # ---------------------------------------------------------------------------
-# Web pentesting scan (Playwright + headless Chromium)
+# Web pentesting scan (Stagehand + headless Chromium)
 # ---------------------------------------------------------------------------
 
 @app.function(
@@ -1945,32 +2038,28 @@ async def run_web_scan(
     convex_url: str = "",
     convex_deploy_key: str = "",
 ):
-    """Run a web application pentesting scan with headless Chromium via Playwright."""
-    from playwright.async_api import async_playwright
-
+    """Run a web application pentesting scan with Stagehand + headless Chromium."""
     try:
         await _push_action(
             convex_url, convex_deploy_key, scan_id, "observation",
-            f"Rem is launching a headless browser targeting {target_url}...",
+            f"Rem is launching Stagehand browser targeting {target_url}...",
         )
 
-        async with async_playwright() as p:
-            browser = await p.chromium.launch(headless=True)
-            page = await browser.new_page()
-            await page.goto(target_url, timeout=20000)
+        session, pw_page, cleanup = await _start_stagehand_browser(target_url)
 
+        try:
             await _push_action(
                 convex_url, convex_deploy_key, scan_id, "observation",
-                f"Browser active — loaded {page.url}",
+                f"Browser active (Stagehand + Haiku) — loaded {pw_page.url}",
             )
 
             await _run_web_claude_agent(
                 scan_id, project_id, target_url, test_account,
-                user_context, page, convex_url, convex_deploy_key,
+                user_context, session, pw_page, convex_url, convex_deploy_key,
                 model=model,
             )
-
-            await browser.close()
+        finally:
+            await cleanup()
 
     except Exception as e:
         # Surface error to the frontend
@@ -1995,13 +2084,13 @@ async def _run_web_claude_agent(
     target_url: str,
     test_account: dict | None,
     user_context: str | None,
-    page,
+    stagehand_session,
+    pw_page,
     convex_url: str,
     deploy_key: str,
     model: str = "claude-opus-4.6",
 ):
-    """Run web pentesting using the specified Claude model with Playwright browser tools."""
-    import anthropic
+    """Run web pentesting using Claude with Stagehand (AI browser) + raw Playwright tools."""
     import json
 
     client = _get_anthropic_client()
@@ -2016,7 +2105,7 @@ async def _run_web_claude_agent(
 
 Scan BOTH unauthenticated and authenticated surfaces:
 1. First pass: unauthenticated — check public attack surface, headers, exposed endpoints
-2. Then login with the test account
+2. Then login with the test account (use act with variables for password: instruction="fill password with %pass%", variables={{"pass": "{password}"}})
 3. Second pass: authenticated — explore protected areas, test privilege escalation, session management"""
     else:
         auth_info = "No test credentials provided. Scan unauthenticated attack surface only."
@@ -2038,13 +2127,22 @@ Target: {target_url}
 Human-in-the-loop:
 You have an ask_human tool. The operator is watching the scan live and can help you. When you hit something you can't get past alone — 2FA codes, email verification, CAPTCHAs, bot detection, or any authentication challenge — use ask_human to request what you need. Don't skip these and move on to unauthenticated testing; the whole point of having test credentials is to test the authenticated surface. Ask, wait for the response, then continue.
 
+Browser tools (powered by Stagehand AI — use natural language, NOT CSS selectors):
+- navigate(url): go to a URL, returns page title and visible text
+- act(instruction, variables?): perform browser actions in natural language — "click the login button", "fill the search box with test query". For passwords/secrets, use variables: instruction="fill password with %pass%", variables={{"pass": "secret"}}
+- observe(instruction): find interactive elements — "find all form inputs", "find the submit button"
+- extract(instruction, schema?): extract structured data from the page using AI
+- get_page_content(): detailed HTML/form/link/meta analysis for security review
+- execute_js(script): run JavaScript directly (cookies, headers, XSS tests, DOM)
+- screenshot(label): capture visual evidence
+
 Methodology:
-1. Use get_page_content to understand the page structure — forms, links, inputs
+1. Use observe and get_page_content to understand the page — forms, inputs, links
 2. Check security headers and cookies via execute_js
-3. Crawl key pages — forms, login, search, API endpoints, admin paths
+3. Crawl key pages — use navigate + observe to explore forms, login, search, API endpoints, admin paths
 4. Actively test for vulnerabilities:
-   - XSS: inject payloads via fill_field and navigate to URL params
-   - SQL injection: test inputs with ' OR 1=1 --, UNION SELECT, etc.
+   - XSS: inject payloads via act("fill the search field with <script>alert(1)</script>") and navigate to URL params
+   - SQL injection: test inputs with act("fill the field with ' OR 1=1 --")
    - Auth bypass: navigate to /admin, /api/users, modify IDs in URLs
    - CSRF: check if forms have anti-CSRF tokens (get_page_content)
    - Security headers: CSP, HSTS, X-Frame-Options, X-Content-Type-Options
@@ -2054,8 +2152,6 @@ Methodology:
    - Directory traversal: try ../../etc/passwd in file parameters
 5. Take screenshots of important findings as visual evidence
 6. Submit your report with all findings
-
-For click and fill_field, use CSS selectors. Use get_page_content first to find the right selectors.
 
 You have Firecrawl tools for supplementary web research (CVE lookups, documentation).
 
@@ -2082,34 +2178,53 @@ When you call submit_findings, each vulnerability should be its own entry in the
             },
         },
         {
+            "name": "act",
+            "description": "Perform a browser action using natural language. Stagehand AI finds the right element and interacts with it. Examples: 'click the login button', 'fill the search box with test query', 'select the first dropdown option'. For sensitive values like passwords, use the variables parameter — these are NOT sent to the browser AI.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "instruction": {"type": "string", "description": "Natural language instruction for the browser action"},
+                    "variables": {
+                        "type": "object",
+                        "description": "Sensitive values referenced as %name% in instruction. Example: instruction='fill password with %pass%', variables={'pass': 'secret123'}",
+                        "additionalProperties": {"type": "string"},
+                    },
+                },
+                "required": ["instruction"],
+            },
+        },
+        {
+            "name": "observe",
+            "description": "Find interactive elements on the current page using natural language. Returns a list of actionable elements with descriptions. Use this to understand what's clickable, fillable, or interactive.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "instruction": {"type": "string", "description": "What to look for, e.g. 'find all form inputs', 'find the login button', 'find navigation links'"},
+                },
+                "required": ["instruction"],
+            },
+        },
+        {
+            "name": "extract",
+            "description": "Extract structured data from the current page using AI. Provide a natural language instruction and optionally a JSON schema for the output format.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "instruction": {"type": "string", "description": "What data to extract, e.g. 'extract all form fields and their types'"},
+                    "schema": {
+                        "type": "object",
+                        "description": "JSON schema for the extracted data structure",
+                    },
+                },
+                "required": ["instruction"],
+            },
+        },
+        {
             "name": "get_page_content",
-            "description": "Get the current page's HTML, links, forms, and interactive elements. Use this to understand page structure before interacting.",
+            "description": "Get the current page's HTML, links, forms, inputs, and meta tags. Use for detailed security-focused structural analysis.",
             "input_schema": {
                 "type": "object",
                 "properties": {},
-            },
-        },
-        {
-            "name": "click",
-            "description": "Click an element by CSS selector or text. Use get_page_content first to find selectors.",
-            "input_schema": {
-                "type": "object",
-                "properties": {
-                    "selector": {"type": "string", "description": "CSS selector (e.g. 'button.login', '#submit', 'a[href=\"/admin\"]') or text: prefix for text content (e.g. 'text:Sign In')"},
-                },
-                "required": ["selector"],
-            },
-        },
-        {
-            "name": "fill_field",
-            "description": "Fill a form field with a value. Triggers proper input events.",
-            "input_schema": {
-                "type": "object",
-                "properties": {
-                    "selector": {"type": "string", "description": "CSS selector for the input field"},
-                    "value": {"type": "string", "description": "Value to fill in"},
-                },
-                "required": ["selector", "value"],
             },
         },
         {
@@ -2298,17 +2413,16 @@ When you call submit_findings, each vulnerability should be its own entry in the
                 })
 
                 try:
-                    resp = await page.goto(url, timeout=15000)
-                    status = resp.status if resp else "?"
-                    title = await page.title()
-                    text = await page.inner_text("body")
-                    result_text = f"Navigated to {page.url} (HTTP {status})\nTitle: {title}\n\n{text[:2000]}"
+                    await stagehand_session.navigate(url=url)
+                    title = await pw_page.title()
+                    text = await pw_page.inner_text("body")
+                    result_text = f"Navigated to {pw_page.url}\nTitle: {title}\n\n{text[:2000]}"
                 except Exception as e:
                     result_text = f"Navigation failed: {e}"
 
                 await _push_action(convex_url, deploy_key, scan_id, "tool_result", {
                     "tool": "navigate",
-                    "summary": f"Loaded {page.url}"[:120],
+                    "summary": f"Loaded {pw_page.url}"[:120],
                 })
                 tool_results.append({
                     "type": "tool_result",
@@ -2316,15 +2430,104 @@ When you call submit_findings, each vulnerability should be its own entry in the
                     "content": result_text[:5000],
                 })
 
-            elif tool_use.name == "get_page_content":
+            elif tool_use.name == "act":
+                instruction = tool_use.input["instruction"]
+                variables = tool_use.input.get("variables")
                 await _push_action(convex_url, deploy_key, scan_id, "tool_call", {
-                    "tool": "get_page_content",
-                    "summary": f"Reading page content at {page.url}",
+                    "tool": "act",
+                    "summary": f"Act: {instruction[:100]}",
+                    "input": {"instruction": instruction},
                 })
 
                 try:
-                    # Get a structured view of the page
-                    content = await page.evaluate("""() => {
+                    kwargs = {"input": instruction}
+                    if variables:
+                        kwargs["variables"] = variables
+                    result = await stagehand_session.act(**kwargs)
+                    msg = result.data.result.message if result.data and result.data.result else "Action completed"
+                    success = result.data.result.success if result.data and result.data.result else True
+                    result_text = f"{'Success' if success else 'Failed'}: {msg}. Now at {pw_page.url}"
+                except Exception as e:
+                    result_text = f"Act failed: {e}"
+
+                await _push_action(convex_url, deploy_key, scan_id, "tool_result", {
+                    "tool": "act",
+                    "summary": result_text[:120],
+                })
+                tool_results.append({
+                    "type": "tool_result",
+                    "tool_use_id": tool_use.id,
+                    "content": result_text,
+                })
+
+            elif tool_use.name == "observe":
+                instruction = tool_use.input["instruction"]
+                await _push_action(convex_url, deploy_key, scan_id, "tool_call", {
+                    "tool": "observe",
+                    "summary": f"Observe: {instruction[:100]}",
+                    "input": {"instruction": instruction},
+                })
+
+                items = []
+                try:
+                    result = await stagehand_session.observe(instruction=instruction)
+                    elements = result.data.result if result.data else []
+                    for el in (elements or []):
+                        d = el.to_dict(exclude_none=True) if hasattr(el, "to_dict") else str(el)
+                        items.append(d)
+                    result_text = json.dumps(items[:20], indent=2, default=str)
+                except Exception as e:
+                    result_text = f"Observe failed: {e}"
+
+                await _push_action(convex_url, deploy_key, scan_id, "tool_result", {
+                    "tool": "observe",
+                    "summary": f"Found {len(items)} elements",
+                    "content": result_text[:10000],
+                })
+                tool_results.append({
+                    "type": "tool_result",
+                    "tool_use_id": tool_use.id,
+                    "content": result_text[:10000],
+                })
+
+            elif tool_use.name == "extract":
+                instruction = tool_use.input["instruction"]
+                schema = tool_use.input.get("schema")
+                await _push_action(convex_url, deploy_key, scan_id, "tool_call", {
+                    "tool": "extract",
+                    "summary": f"Extract: {instruction[:100]}",
+                    "input": {"instruction": instruction},
+                })
+
+                try:
+                    kwargs = {"instruction": instruction}
+                    if schema:
+                        kwargs["schema"] = schema
+                    result = await stagehand_session.extract(**kwargs)
+                    extracted = result.data.result if result.data else {}
+                    result_text = json.dumps(extracted, indent=2, default=str)
+                except Exception as e:
+                    result_text = f"Extract failed: {e}"
+
+                await _push_action(convex_url, deploy_key, scan_id, "tool_result", {
+                    "tool": "extract",
+                    "summary": f"Extracted {len(result_text):,} chars",
+                    "content": result_text[:10000],
+                })
+                tool_results.append({
+                    "type": "tool_result",
+                    "tool_use_id": tool_use.id,
+                    "content": result_text[:10000],
+                })
+
+            elif tool_use.name == "get_page_content":
+                await _push_action(convex_url, deploy_key, scan_id, "tool_call", {
+                    "tool": "get_page_content",
+                    "summary": f"Reading page content at {pw_page.url}",
+                })
+
+                try:
+                    content = await pw_page.evaluate("""() => {
                         const result = {
                             url: location.href,
                             title: document.title,
@@ -2333,7 +2536,6 @@ When you call submit_findings, each vulnerability should be its own entry in the
                             inputs: [],
                             meta: [],
                         };
-                        // Forms
                         document.querySelectorAll('form').forEach((f, i) => {
                             result.forms.push({
                                 action: f.action, method: f.method, id: f.id,
@@ -2342,22 +2544,18 @@ When you call submit_findings, each vulnerability should be its own entry in the
                                 }))
                             });
                         });
-                        // Links (first 50)
                         Array.from(document.querySelectorAll('a[href]')).slice(0, 50).forEach(a => {
                             result.links.push({href: a.href, text: a.textContent?.trim().slice(0, 60)});
                         });
-                        // Standalone inputs
                         document.querySelectorAll('input:not(form input), textarea:not(form textarea)').forEach(el => {
                             result.inputs.push({tag: el.tagName, type: el.type, name: el.name, id: el.id});
                         });
-                        // Meta tags
                         document.querySelectorAll('meta').forEach(m => {
                             if (m.name || m.httpEquiv) result.meta.push({name: m.name, httpEquiv: m.httpEquiv, content: m.content});
                         });
                         return result;
                     }""")
-                    # Also get truncated HTML
-                    html = await page.content()
+                    html = await pw_page.content()
                     content["html_preview"] = html[:8000]
                     result_text = json.dumps(content, indent=2, default=str)
                 except Exception as e:
@@ -2374,60 +2572,6 @@ When you call submit_findings, each vulnerability should be its own entry in the
                     "content": result_text[:15000],
                 })
 
-            elif tool_use.name == "click":
-                selector = tool_use.input["selector"]
-                await _push_action(convex_url, deploy_key, scan_id, "tool_call", {
-                    "tool": "click",
-                    "summary": f"Clicking: {selector[:80]}",
-                    "input": {"selector": selector},
-                })
-
-                try:
-                    if selector.startswith("text:"):
-                        await page.get_by_text(selector[5:]).first.click(timeout=5000)
-                    else:
-                        await page.click(selector, timeout=5000)
-                    await page.wait_for_load_state("domcontentloaded", timeout=5000)
-                    result_text = f"Clicked {selector}. Now at {page.url}"
-                except Exception as e:
-                    result_text = f"Click failed: {e}"
-
-                await _push_action(convex_url, deploy_key, scan_id, "tool_result", {
-                    "tool": "click",
-                    "summary": result_text[:120],
-                })
-                tool_results.append({
-                    "type": "tool_result",
-                    "tool_use_id": tool_use.id,
-                    "content": result_text,
-                })
-
-            elif tool_use.name == "fill_field":
-                selector = tool_use.input["selector"]
-                value = tool_use.input["value"]
-                display_val = value if len(value) < 40 else value[:37] + "..."
-                await _push_action(convex_url, deploy_key, scan_id, "tool_call", {
-                    "tool": "fill_field",
-                    "summary": f"Filling {selector[:40]} with '{display_val}'",
-                    "input": {"selector": selector, "value": value},
-                })
-
-                try:
-                    await page.fill(selector, value, timeout=5000)
-                    result_text = f"Filled {selector} with value"
-                except Exception as e:
-                    result_text = f"Fill failed: {e}"
-
-                await _push_action(convex_url, deploy_key, scan_id, "tool_result", {
-                    "tool": "fill_field",
-                    "summary": result_text[:120],
-                })
-                tool_results.append({
-                    "type": "tool_result",
-                    "tool_use_id": tool_use.id,
-                    "content": result_text,
-                })
-
             elif tool_use.name == "execute_js":
                 script = tool_use.input["script"]
                 await _push_action(convex_url, deploy_key, scan_id, "tool_call", {
@@ -2437,7 +2581,7 @@ When you call submit_findings, each vulnerability should be its own entry in the
                 })
 
                 try:
-                    result = await page.evaluate(script)
+                    result = await pw_page.evaluate(script)
                     result_text = json.dumps(result, indent=2, default=str) if result is not None else "undefined"
                 except Exception as e:
                     result_text = f"JS execution failed: {e}"
@@ -2461,7 +2605,7 @@ When you call submit_findings, each vulnerability should be its own entry in the
                 })
 
                 try:
-                    screenshot_bytes = await page.screenshot(type="png")
+                    screenshot_bytes = await pw_page.screenshot(type="png")
                     storage_id = await _upload_screenshot(
                         convex_url, deploy_key, screenshot_bytes,
                     )

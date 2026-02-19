@@ -43,7 +43,7 @@ server/
 - Image: `web_sandbox_image` (debian + Playwright/Chromium + Stagehand)
 - Flow: launch headless Chrome → Claude agent browses/tests target → submit findings
 - Tools: `navigate`, `observe`, `act`, `extract`, `execute_js`, `screenshot`, `submit_findings` + Firecrawl MCP
-- Browser: Stagehand (env=LOCAL) → Playwright → headless Chromium (all in Modal container, no external browser service)
+- Browser: Stagehand (server=local, Haiku for element resolution) → Playwright via CDP for raw JS/screenshots (all in Modal container, no external browser service)
 - Screenshots: uploaded to Convex file storage via `storage:generateUploadUrl` mutation, storageId stored in action payload
 - Auth: if test account provided, scans both unauthenticated and authenticated surfaces
 - Active testing: injects XSS/SQLi payloads, tests auth bypass, checks headers, CORS, cookies

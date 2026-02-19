@@ -116,7 +116,7 @@ function computeStats(actions: Action[] | undefined) {
       if (tool === "read_file") filesRead++;
       if (tool === "search_code") searches++;
       if (tool === "screenshot") screenshots++;
-      if (["navigate", "click", "fill_field", "get_page_content"].includes(tool)) browserActions++;
+      if (["navigate", "act", "observe", "extract", "click", "fill_field", "get_page_content"].includes(tool)) browserActions++;
     }
   }
   const first = actions[0].timestamp;
