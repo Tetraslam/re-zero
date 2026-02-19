@@ -202,12 +202,14 @@ export default function ProjectPage() {
   return (
     <div className="flex flex-col h-[calc(100vh-3.25rem)]">
       {/* Top bar: project info + deploy buttons */}
-      <div className={`px-6 py-3 border-b border-border shrink-0 flex items-center justify-between gap-6 relative overflow-hidden ${
+      <div className={`px-6 py-3 border-b border-border shrink-0 flex items-center justify-between gap-6 relative ${
         selectedTier === "oni" ? "border-b-rem/30" : ""
       }`}>
         {/* Oni ambient shimmer */}
         {selectedTier === "oni" && (
-          <div className="absolute inset-0 animate-oni-shimmer pointer-events-none" />
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <div className="absolute inset-0 animate-oni-shimmer" />
+          </div>
         )}
         <div className="flex items-baseline gap-2 min-w-0">
           <Link href="/dashboard" className="text-sm text-muted-foreground hover:text-rem transition-colors duration-150 shrink-0">
