@@ -108,7 +108,16 @@ web_sandbox_image = (
         "playwright",
         "stagehand",
     )
-    .run_commands("playwright install --with-deps chromium")
+    .run_commands(
+        "playwright install --with-deps chromium",
+        # Symlink Playwright's Chromium to a fixed path for Stagehand's SEA binary.
+        # Playwright installs to versioned dirs — this makes the path stable.
+        'bash -c \'CHROME=$(find /root/.cache/ms-playwright -type f \\( -name chrome -o -name headless_shell \\) -executable 2>/dev/null | head -1) && '
+        'if [ -z "$CHROME" ]; then echo "FATAL: No Chromium binary found after playwright install" && exit 1; fi && '
+        'ln -sf "$CHROME" /usr/local/bin/stagehand-chrome && '
+        'echo "Linked $CHROME -> /usr/local/bin/stagehand-chrome"\'',
+    )
+    .env({"CHROME_PATH": "/usr/local/bin/stagehand-chrome"})
 )
 
 # OpenCode images — for OpenRouter models (GLM-5, Kimi K2.5, etc.)
@@ -128,7 +137,14 @@ opencode_sandbox_image = (
 opencode_web_sandbox_image = (
     opencode_sandbox_image
     .pip_install("playwright", "aiohttp", "stagehand")
-    .run_commands("playwright install --with-deps chromium")
+    .run_commands(
+        "playwright install --with-deps chromium",
+        'bash -c \'CHROME=$(find /root/.cache/ms-playwright -type f \\( -name chrome -o -name headless_shell \\) -executable 2>/dev/null | head -1) && '
+        'if [ -z "$CHROME" ]; then echo "FATAL: No Chromium binary found after playwright install" && exit 1; fi && '
+        'ln -sf "$CHROME" /usr/local/bin/stagehand-chrome && '
+        'echo "Linked $CHROME -> /usr/local/bin/stagehand-chrome"\'',
+    )
+    .env({"CHROME_PATH": "/usr/local/bin/stagehand-chrome"})
 )
 
 app = modal.App("re-zero-sandbox")
@@ -1506,45 +1522,19 @@ async def _start_stagehand_browser(target_url: str):
     """
     from stagehand import AsyncStagehand
     from playwright.async_api import async_playwright
-    import glob
 
-    # Find Playwright's Chromium binary for Stagehand local mode
-    # Playwright 1.58+ installs both full chromium and headless shell
-    chrome_path = ""
-    for pattern in [
-        "/root/.cache/ms-playwright/chromium-*/chrome-linux/chrome",
-        "/root/.cache/ms-playwright/chromium_headless_shell-*/chrome-linux/headless_shell",
-    ]:
-        found = glob.glob(pattern)
-        if found:
-            chrome_path = found[0]
-            break
+    # CHROME_PATH is baked into the Modal image env via symlink at /usr/local/bin/stagehand-chrome.
+    # The symlink is created at image build time pointing to Playwright's actual Chromium binary.
+    chrome_path = os.environ.get("CHROME_PATH", "/usr/local/bin/stagehand-chrome")
 
-    if not chrome_path:
-        # List what's actually in the playwright cache for debugging
-        import pathlib
-        pw_cache = pathlib.Path("/root/.cache/ms-playwright")
-        if pw_cache.exists():
-            all_files = list(pw_cache.rglob("*"))
-            print(f"[stagehand] Playwright cache contents ({len(all_files)} files):")
-            for f in all_files[:30]:
-                print(f"  {f}")
-        raise RuntimeError("No Chromium binary found in Playwright cache")
-
-    os.environ["CHROME_PATH"] = chrome_path
-    print(f"[stagehand] CHROME_PATH={chrome_path}")
-    print(f"[stagehand] AWS_REGION={os.environ.get('AWS_REGION', 'NOT SET')}")
-
-    # Create Stagehand client in local mode — Haiku via Bedrock handles element resolution
-    # AWS creds (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION)
-    # already in env from Modal secret — SEA binary picks them up via AWS credential chain
+    # Stagehand local mode: SEA binary (embedded Node.js server) starts Chrome + handles
+    # AI element resolution via Haiku on Bedrock. AWS creds flow through env vars.
     client = AsyncStagehand(
         server="local",
         model_api_key="bedrock",  # placeholder — bedrock uses AWS credential chain, not API key
         local_chrome_path=chrome_path,
-        local_ready_timeout_s=60.0,  # SEA binary can be slow on first boot
+        local_ready_timeout_s=60.0,
     )
-    print("[stagehand] AsyncStagehand client created, starting session...")
     session = await client.sessions.start(
         model_name="bedrock/global.anthropic.claude-haiku-4-5-20251001-v1:0",
         browser={
@@ -1556,7 +1546,6 @@ async def _start_stagehand_browser(target_url: str):
             },
         },
     )
-    print(f"[stagehand] Session started: {session.session_id}")
 
     # Navigate to target via Stagehand
     await session.navigate(url=target_url)
