@@ -831,13 +831,21 @@ def _build_opencode_config(model: str) -> dict:
     # :nitro suffix = sort by throughput on OpenRouter
     nitro_id = f"{model_id}:nitro"
 
+    # Use custom @ai-sdk/openai-compatible provider instead of built-in
+    # openrouter provider. This lets us set includeUsage:true to fix
+    # NaN token counts (OpenCode #423 / ai-sdk #6774). The built-in
+    # openrouter provider has a strict schema that rejects includeUsage.
+    provider_id = "openrouter-rem"
     return {
         "provider": {
-            "openrouter": {
-                # includeUsage: fixes NaN token counts with OpenAI-compatible
-                # streaming (OpenCode issue #423 / ai-sdk issue #6774).
-                # Without this, tokens.total = NaN → Zod validation crash.
-                "includeUsage": True,
+            provider_id: {
+                "npm": "@ai-sdk/openai-compatible",
+                "name": "OpenRouter",
+                "options": {
+                    "baseURL": "https://openrouter.ai/api/v1",
+                    "apiKey": "{env:OPENROUTER_API_KEY}",
+                    "includeUsage": True,
+                },
                 "models": {
                     nitro_id: {
                         "name": label,
@@ -849,7 +857,7 @@ def _build_opencode_config(model: str) -> dict:
                 },
             },
         },
-        "model": f"openrouter/{nitro_id}",
+        "model": f"{provider_id}/{nitro_id}",
     }
 
 
