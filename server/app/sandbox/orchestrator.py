@@ -1545,9 +1545,22 @@ async def _start_bedrock_proxy():
 
         # Map model name to Bedrock model ID
         model = body.get("model", "")
-        body["model"] = _BEDROCK_MODEL_MAP.get(model, model)
+        bedrock_model = _BEDROCK_MODEL_MAP.get(model, model)
+        body["model"] = bedrock_model
+        print(f"[bedrock-proxy] {model} → {bedrock_model}, stream={body.get('stream', False)}, tools={len(body.get('tools', []))}")
 
         stream_mode = body.pop("stream", False)
+
+        # Build shared kwargs, filtering out NOT_GIVEN for Bedrock compatibility
+        api_kwargs = {
+            "model": body["model"],
+            "max_tokens": body.get("max_tokens", 1024),
+            "messages": body.get("messages", []),
+        }
+        for key in ("system", "temperature", "tools", "tool_choice"):
+            val = body.get(key)
+            if val is not None:
+                api_kwargs[key] = val
 
         try:
             if stream_mode:
@@ -1558,34 +1571,30 @@ async def _start_bedrock_proxy():
                 })
                 await resp.prepare(request)
 
-                async with bedrock.messages.stream(
-                    model=body["model"],
-                    max_tokens=body.get("max_tokens", 1024),
-                    messages=body.get("messages", []),
-                    system=body.get("system", anthropic.NOT_GIVEN),
-                    temperature=body.get("temperature", anthropic.NOT_GIVEN),
-                    tools=body.get("tools", anthropic.NOT_GIVEN),
-                    tool_choice=body.get("tool_choice", anthropic.NOT_GIVEN),
-                ) as stream:
-                    async for event in stream:
-                        raw = event.model_dump() if hasattr(event, "model_dump") else {"type": "unknown"}
-                        event_type = raw.get("type", "unknown")
-                        sse_line = f"event: {event_type}\ndata: {json.dumps(raw)}\n\n"
-                        await resp.write(sse_line.encode())
+                # Use raw streaming (.create with stream=True) to get wire-format
+                # SSE events. Don't use .stream() helper — it yields parsed/aggregated
+                # events that don't match the Anthropic SSE wire format expected by
+                # the Stagehand SEA binary's @ai-sdk/anthropic provider.
+                raw_stream = await bedrock.messages.create(**api_kwargs, stream=True)
+                async for event in raw_stream:
+                    data = event.model_dump()
+                    event_type = data.get("type", "unknown")
+                    sse_line = f"event: {event_type}\ndata: {json.dumps(data)}\n\n"
+                    await resp.write(sse_line.encode())
 
                 return resp
             else:
-                result = await bedrock.messages.create(
-                    model=body["model"],
-                    max_tokens=body.get("max_tokens", 1024),
-                    messages=body.get("messages", []),
-                    system=body.get("system", anthropic.NOT_GIVEN),
-                    temperature=body.get("temperature", anthropic.NOT_GIVEN),
-                    tools=body.get("tools", anthropic.NOT_GIVEN),
-                    tool_choice=body.get("tool_choice", anthropic.NOT_GIVEN),
-                )
-                return web.json_response(result.model_dump())
+                # Bedrock SDK forces streaming for tool-use and high max_tokens
+                # requests (ValueError: "Streaming is required for operations that
+                # may take longer than 10 minutes"). Use .stream() helper to stream
+                # under the hood and collect the final message for a JSON response.
+                async with bedrock.messages.stream(**api_kwargs) as stream:
+                    final_message = await stream.get_final_message()
+                return web.json_response(final_message.model_dump())
         except Exception as e:
+            import traceback
+            print(f"[bedrock-proxy] ERROR: {type(e).__name__}: {e}")
+            traceback.print_exc()
             return web.json_response(
                 {"error": {"type": "api_error", "message": str(e)}},
                 status=500,
@@ -1932,41 +1941,26 @@ Operator notes (from the person who set up this scan):
 
 Pay close attention to these notes — they contain insider knowledge about the target."""
 
-                system_prompt = f"""You are Rem, a security researcher performing a web application penetration test.
+                system_prompt = f"""You are Rem, a security researcher running a web penetration test.
 
 Target: {target_url}
 {auth_info}
 {context_info}
 
-Human-in-the-loop:
-You have an ask_human tool. The operator is watching the scan live and can help you. When you hit something you can't get past alone — 2FA codes, email verification, CAPTCHAs, bot detection — use ask_human.
+You have a headless browser with two layers:
+- **Stagehand (AI-powered)**: observe, act, extract, navigate — use natural language to interact with pages. observe() first to see what's there, then act() to click/fill. One action per act() call. For passwords, use variables parameter.
+- **Playwright (direct)**: execute_js, screenshot, get_page_content — for programmatic checks (cookies, headers, API fetching, XSS payloads, CORS). Use act() for UI interactions instead of JS clicks.
+- **ask_human**: for 2FA codes, CAPTCHAs, email verification only.
 
-Browser tools (powered by Stagehand AI — use natural language, NOT CSS selectors):
-- navigate(url): go to a URL
-- act(instruction): perform browser actions in natural language — "click the login button", "fill the email field with test@example.com". For passwords/secrets, use variables: instruction="fill password with %pass%", variables={{pass: "secret"}}
-- observe(instruction): find interactive elements — "find all form inputs", "find the submit button"
-- extract(instruction, schema): extract structured data from the page
-- get_page_content(): detailed HTML/form/link/meta analysis for security review
-- execute_js(script): run JavaScript (cookies, headers, XSS tests, DOM)
-- screenshot(label): capture visual evidence
+Think like an attacker, not an auditor. Focus on things that let someone actually compromise the app:
+- Exposed backend APIs (Convex, Supabase, Firebase, GraphQL) — can you call mutations without auth? Read other users' data?
+- Auth/authz flaws — admin routes, IDOR, API endpoints without permission checks
+- Real injection — XSS that actually lands, not just "missing CSP header"
+- Business logic issues — replay attacks, price manipulation, out-of-order operations
 
-Methodology:
-1. Use observe and get_page_content to understand the page — forms, inputs, links
-2. Check security headers and cookies via execute_js
-3. Crawl key pages — use navigate + observe to explore forms, login, search, API endpoints, admin paths
-4. Actively test for vulnerabilities:
-   - XSS: inject payloads via act("fill the search field with <script>alert(1)</script>") and navigate to URL params
-   - SQL injection: test inputs with act("fill the field with ' OR 1=1 --")
-   - Auth bypass: navigate to /admin, /api/users, modify IDs in URLs
-   - CSRF: check if forms have anti-CSRF tokens (get_page_content)
-   - Security headers: CSP, HSTS, X-Frame-Options, X-Content-Type-Options
-   - Cookie flags: HttpOnly, Secure, SameSite
-   - Info disclosure: error messages, stack traces, .env, .git, robots.txt
-   - CORS: check Access-Control-Allow-Origin via execute_js
-5. Take screenshots of important findings as visual evidence
-6. Submit your report with all findings using submit_findings
+Don't pad the report with missing headers, publishable API keys, or missing security.txt. Quality over quantity.
 
-Be thorough and aggressive. Only report confirmed or highly probable vulnerabilities."""
+Severity: Critical/High = demonstrated impact. Medium = real misconfiguration. Low = defense-in-depth gap. Info = notable observation."""
 
                 user_msg = f"Perform a comprehensive penetration test on {target_url}. Actively probe for vulnerabilities, take screenshots of findings, and produce a structured security report using the submit_findings tool."
 
@@ -2212,6 +2206,7 @@ async def _run_web_claude_agent(
     model: str = "claude-opus-4.6",
 ):
     """Run web pentesting using Claude with Stagehand (AI browser) + raw Playwright tools."""
+    import asyncio
     import json
 
     client = _get_anthropic_client()
@@ -2239,47 +2234,65 @@ Operator notes (from the person who set up this scan):
 
 Pay close attention to these notes — they contain insider knowledge about the target."""
 
-    system_prompt = f"""You are Rem, a security researcher performing a web application penetration test.
+    system_prompt = f"""You are Rem, a security researcher running a web penetration test.
 
 Target: {target_url}
 {auth_info}
 {context_info}
 
-Human-in-the-loop:
-You have an ask_human tool. The operator is watching the scan live and can help you. When you hit something you can't get past alone — 2FA codes, email verification, CAPTCHAs, bot detection, or any authentication challenge — use ask_human to request what you need. Don't skip these and move on to unauthenticated testing; the whole point of having test credentials is to test the authenticated surface. Ask, wait for the response, then continue.
+## Your browser
 
-Browser tools (powered by Stagehand AI — use natural language, NOT CSS selectors):
-- navigate(url): go to a URL, returns page title and visible text
-- act(instruction, variables?): perform browser actions in natural language — "click the login button", "fill the search box with test query". For passwords/secrets, use variables: instruction="fill password with %pass%", variables={{"pass": "secret"}}
-- observe(instruction): find interactive elements — "find all form inputs", "find the submit button"
-- extract(instruction, schema?): extract structured data from the page using AI
-- get_page_content(): detailed HTML/form/link/meta analysis for security review
-- execute_js(script): run JavaScript directly (cookies, headers, XSS tests, DOM)
-- screenshot(label): capture visual evidence
+You have a headless Chromium browser controlled through two layers:
 
-Methodology:
-1. Use observe and get_page_content to understand the page — forms, inputs, links
-2. Check security headers and cookies via execute_js
-3. Crawl key pages — use navigate + observe to explore forms, login, search, API endpoints, admin paths
-4. Actively test for vulnerabilities:
-   - XSS: inject payloads via act("fill the search field with <script>alert(1)</script>") and navigate to URL params
-   - SQL injection: test inputs with act("fill the field with ' OR 1=1 --")
-   - Auth bypass: navigate to /admin, /api/users, modify IDs in URLs
-   - CSRF: check if forms have anti-CSRF tokens (get_page_content)
-   - Security headers: CSP, HSTS, X-Frame-Options, X-Content-Type-Options
-   - Cookie flags: HttpOnly, Secure, SameSite
-   - Info disclosure: error messages, stack traces, .env, .git, robots.txt
-   - CORS: check Access-Control-Allow-Origin via execute_js
-   - Directory traversal: try ../../etc/passwd in file parameters
-5. Take screenshots of important findings as visual evidence
-6. Submit your report with all findings
+**Stagehand (AI-powered)** — observe, act, extract, navigate. These use a secondary AI model to understand page content and find elements by description. They work best when you give them context. For example, if you call observe() first to see what's on the page, then your act() instructions can reference specific elements and succeed reliably. act() does one interaction at a time — fill a field, click a button, select an option. When filling a form, fill each field and then click submit as separate act() calls.
 
-You have Firecrawl tools for supplementary web research (CVE lookups, documentation).
+For passwords and secrets, use the variables parameter so the value isn't sent to the element-finding model: act(instruction="fill password with %pass%", variables={{"pass": "actualpassword"}})
 
-Be thorough and aggressive in testing. Only report confirmed or highly probable vulnerabilities.
+**Playwright (direct)** — execute_js, screenshot, get_page_content. These bypass the AI layer and talk directly to the browser. Use execute_js for programmatic checks: reading cookies, fetching API endpoints, checking headers, testing CORS, running XSS payloads in the DOM. Use get_page_content for structural analysis of forms, links, and metadata.
 
-Report format:
-When you call submit_findings, each vulnerability should be its own entry in the findings array — don't consolidate them into the summary. The summary is just a brief overview (2-3 sentences). Each finding should include title, severity, description, location (URL/page), recommendation, and code_snippet (the actual headers, HTML, JS, or response content that demonstrates the issue). The richer each finding is, the more useful the report."""
+The Stagehand tools are for interacting with the UI (clicking, typing, navigating). Playwright tools are for inspecting and probing the application programmatically. Use whichever is appropriate.
+
+**ask_human** — The operator is watching live and can provide things you can't get yourself: 2FA codes, email verification links, CAPTCHA solutions. Be specific about what you need. Try a couple approaches before asking.
+
+## What to actually look for
+
+Think like an attacker, not an auditor. The goal is to find things that would let someone actually compromise the application — steal data, escalate privileges, impersonate users, or break things.
+
+**High-value targets (spend most of your time here):**
+- Exposed backend APIs. Modern apps often use Convex, Supabase, Firebase, or GraphQL backends. These frequently have overly permissive endpoints. Try to discover the backend by looking at network requests (check JS bundles, __NEXT_DATA__, inline scripts) and then probe it directly. Can you call mutations without auth? Can you read other users' data? Can you enumerate users?
+- Authentication and authorization flaws. Can you access admin routes? Can you modify your user ID in API calls to access other accounts? Are there API endpoints that don't check auth at all?
+- Injection that actually lands. Don't just try `<script>alert(1)</script>` in a search box and move on. Check if inputs are reflected anywhere, if the app uses dangerouslySetInnerHTML, if URL parameters are injected into the page. Try polyglot payloads. Check stored XSS in forms that save data.
+- Business logic issues. Can you do things out of order? Can you replay requests? Can you manipulate prices, quantities, or access levels through the API?
+
+**Lower-value (check but don't dwell):**
+- Security headers, cookie flags, CORS policy. Worth a quick check but these are rarely the difference between secure and compromised. Note them if they're genuinely misconfigured but don't pad your report with "missing Referrer-Policy" or "missing Permissions-Policy" — these are hygiene items, not vulnerabilities.
+
+**Don't report these:**
+- Missing security.txt or robots.txt — not a vulnerability
+- Clerk/Auth0/Supabase publishable keys in client-side JavaScript — these are public by design
+- Server/technology version disclosure on managed platforms (Vercel, Netlify, Cloudflare) — it's public knowledge
+- Missing HSTS on a platform that forces HTTPS at the edge — the risk is theoretical, not practical
+- Any finding where the "vulnerability" requires the attacker to already have a position that makes the finding irrelevant (e.g., MitM when the site is HTTPS-only)
+
+**Severity calibration:**
+- Critical/High: You can actually demonstrate impact — data access, auth bypass, code execution, privilege escalation
+- Medium: Real misconfiguration that increases attack surface but you couldn't fully exploit it
+- Low: Defense-in-depth gaps that would only matter if combined with another vulnerability
+- Info: Observations worth noting but not actionable vulnerabilities
+
+## Approach
+
+Start by understanding the application. What does it do? What framework/backend does it use? Where does the data live? The page source, JS bundles, and network behavior tell you more than checking /.env and /.git.
+
+If test credentials are provided, get authenticated and then explore what the authenticated API surface looks like. Often the real vulnerabilities are in API endpoints that forget to check permissions, not in the login page itself.
+
+Be creative. Try things the developers probably didn't think about. The mundane header checks are table stakes — what makes a penetration test valuable is finding the things that a scanner wouldn't.
+
+When you find something real, take a screenshot and document exactly what you did to reproduce it — including the request/response if relevant.
+
+## Report
+
+When you call submit_findings, each finding should be its own entry. The summary is just 2-3 sentences of overview. Each finding needs: title, severity, description, location, recommendation, and code_snippet showing the actual evidence. Quality over quantity — 5 real findings are worth more than 15 padded ones."""
 
     await _push_action(convex_url, deploy_key, scan_id, "reasoning",
         "Rem starting web penetration test...")
@@ -2300,7 +2313,7 @@ When you call submit_findings, each vulnerability should be its own entry in the
         },
         {
             "name": "act",
-            "description": "Perform a browser action using natural language. Stagehand AI finds the right element and interacts with it. Examples: 'click the login button', 'fill the search box with test query', 'select the first dropdown option'. For sensitive values like passwords, use the variables parameter — these are NOT sent to the browser AI.",
+            "description": "Perform a browser action using natural language. Stagehand AI identifies the right element and interacts with it. Works best when you've called observe() first so you know what's on the page. One interaction per call — fill a field, click a button, etc. For passwords, use the variables parameter to keep them from the element-finding model.",
             "input_schema": {
                 "type": "object",
                 "properties": {
@@ -2316,7 +2329,7 @@ When you call submit_findings, each vulnerability should be its own entry in the
         },
         {
             "name": "observe",
-            "description": "Find interactive elements on the current page using natural language. Returns a list of actionable elements with descriptions. Use this to understand what's clickable, fillable, or interactive.",
+            "description": "Find interactive elements on the current page using natural language. Returns a list of elements with descriptions and selectors. Useful before act() to understand what's clickable or fillable.",
             "input_schema": {
                 "type": "object",
                 "properties": {
@@ -2350,7 +2363,7 @@ When you call submit_findings, each vulnerability should be its own entry in the
         },
         {
             "name": "execute_js",
-            "description": "Execute JavaScript in the browser. Use for checking cookies, response headers, testing XSS, DOM inspection. Return values to see results.",
+            "description": "Execute JavaScript directly in the browser. Good for reading cookies, fetching API endpoints, checking headers, testing CORS, DOM inspection, and running XSS payloads. For UI interactions (clicking, typing), use act() instead since Stagehand handles element finding more reliably.",
             "input_schema": {
                 "type": "object",
                 "properties": {
@@ -2560,16 +2573,38 @@ When you call submit_findings, each vulnerability should be its own entry in the
                     "input": {"instruction": instruction},
                 })
 
-                try:
-                    kwargs = {"input": instruction}
-                    if variables:
-                        kwargs["variables"] = variables
-                    result = await stagehand_session.act(**kwargs)
-                    msg = result.data.result.message if result.data and result.data.result else "Action completed"
-                    success = result.data.result.success if result.data and result.data.result else True
-                    result_text = f"{'Success' if success else 'Failed'}: {msg}. Now at {pw_page.url}"
-                except Exception as e:
-                    result_text = f"Act failed: {e}"
+                result_text = None
+                for attempt in range(3):
+                    try:
+                        kwargs = {"input": instruction}
+                        if variables:
+                            # Stagehand SDK expects variables inside options, not top-level
+                            kwargs["options"] = {"variables": variables}
+                        result = await asyncio.wait_for(
+                            stagehand_session.act(**kwargs),
+                            timeout=30,
+                        )
+                        msg = result.data.result.message if result.data and result.data.result else "Action completed"
+                        success = result.data.result.success if result.data and result.data.result else True
+                        result_text = f"{'Success' if success else 'Failed'}: {msg}. Now at {pw_page.url}"
+                        break
+                    except asyncio.TimeoutError:
+                        if attempt < 2:
+                            await asyncio.sleep(1)
+                            continue
+                        result_text = (
+                            "Act timed out after 30s. The element may not exist or the page is too complex. "
+                            "Use observe() to find what's on the page, then retry with a more specific instruction."
+                        )
+                    except Exception as e:
+                        if attempt < 2:
+                            await asyncio.sleep(1.5 * (attempt + 1))
+                            continue
+                        result_text = (
+                            f"Act failed after {attempt + 1} attempts: {e}. "
+                            "Use observe() to find elements on the page first, "
+                            "then retry act() with a more specific instruction targeting the exact element."
+                        )
 
                 await _push_action(convex_url, deploy_key, scan_id, "tool_result", {
                     "tool": "act",
@@ -2590,15 +2625,26 @@ When you call submit_findings, each vulnerability should be its own entry in the
                 })
 
                 items = []
-                try:
-                    result = await stagehand_session.observe(instruction=instruction)
-                    elements = result.data.result if result.data else []
-                    for el in (elements or []):
-                        d = el.to_dict(exclude_none=True) if hasattr(el, "to_dict") else str(el)
-                        items.append(d)
-                    result_text = json.dumps(items[:20], indent=2, default=str)
-                except Exception as e:
-                    result_text = f"Observe failed: {e}"
+                for attempt in range(2):
+                    try:
+                        result = await asyncio.wait_for(
+                            stagehand_session.observe(instruction=instruction),
+                            timeout=30,
+                        )
+                        elements = result.data.result if result.data else []
+                        for el in (elements or []):
+                            d = el.to_dict(exclude_none=True) if hasattr(el, "to_dict") else str(el)
+                            items.append(d)
+                        result_text = json.dumps(items[:20], indent=2, default=str)
+                        break
+                    except asyncio.TimeoutError:
+                        result_text = "Observe timed out (30s). Page may be too complex for element detection. Use get_page_content() or execute_js() to inspect the page instead."
+                        break
+                    except Exception as e:
+                        if attempt == 0:
+                            await asyncio.sleep(1)
+                            continue
+                        result_text = f"Observe failed: {e}"
 
                 await _push_action(convex_url, deploy_key, scan_id, "tool_result", {
                     "tool": "observe",
@@ -2620,15 +2666,26 @@ When you call submit_findings, each vulnerability should be its own entry in the
                     "input": {"instruction": instruction},
                 })
 
-                try:
-                    kwargs = {"instruction": instruction}
-                    if schema:
-                        kwargs["schema"] = schema
-                    result = await stagehand_session.extract(**kwargs)
-                    extracted = result.data.result if result.data else {}
-                    result_text = json.dumps(extracted, indent=2, default=str)
-                except Exception as e:
-                    result_text = f"Extract failed: {e}"
+                for attempt in range(2):
+                    try:
+                        kwargs = {"instruction": instruction}
+                        if schema:
+                            kwargs["schema"] = schema
+                        result = await asyncio.wait_for(
+                            stagehand_session.extract(**kwargs),
+                            timeout=30,
+                        )
+                        extracted = result.data.result if result.data else {}
+                        result_text = json.dumps(extracted, indent=2, default=str)
+                        break
+                    except asyncio.TimeoutError:
+                        result_text = "Extract timed out (30s). Use get_page_content() or execute_js() instead."
+                        break
+                    except Exception as e:
+                        if attempt == 0:
+                            await asyncio.sleep(1)
+                            continue
+                        result_text = f"Extract failed: {e}"
 
                 await _push_action(convex_url, deploy_key, scan_id, "tool_result", {
                     "tool": "extract",
